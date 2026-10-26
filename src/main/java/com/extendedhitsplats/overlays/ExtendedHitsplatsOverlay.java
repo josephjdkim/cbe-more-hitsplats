@@ -26,144 +26,116 @@ package com.extendedhitsplats.overlays;
  */
 
 import com.extendedhitsplats.ExtendedHitsplatsConfig;
-import com.extendedhitsplats.ExtendedHitsplatsPlugin;
-import com.extendedhitsplats.HitsplatCategoryEnum;
 import com.extendedhitsplats.points.SplatPoints;
+import com.extendedhitsplats.utils.ActorHitsplats;
 import com.extendedhitsplats.utils.HitsplatManager;
 import com.extendedhitsplats.utils.Icons;
 import com.extendedhitsplats.utils.ManagedHitsplat;
-import net.runelite.api.*;
+import net.runelite.api.Actor;
+import net.runelite.api.Client;
+import net.runelite.api.Hitsplat;
+import net.runelite.api.HitsplatID;
 import net.runelite.api.Point;
-import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.overlay.*;
+import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayLayer;
+import net.runelite.client.ui.overlay.OverlayPosition;
 
 import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 
 public class ExtendedHitsplatsOverlay extends Overlay
 {
-    private final ExtendedHitsplatsPlugin plugin;
+    // Used to find each actor's hitsplat anchor and to size the grid cells
+    private static final BufferedImage REFERENCE_ICON = Icons.OSRS_SELF_DAMAGE_HITSPLAT;
+    // Negative: the sprites' spiky edges are mostly transparent, so neighbours can overlap them a little
+    private static final int CELL_GAP = -2;
+
     private final ExtendedHitsplatsConfig config;
     private final Client client;
+    private final HitsplatManager hitsplatManager;
 
     @Inject
-    private ExtendedHitsplatsOverlay(ExtendedHitsplatsPlugin plugin, ExtendedHitsplatsConfig config, Client client)
+    private ExtendedHitsplatsOverlay(ExtendedHitsplatsConfig config, Client client, HitsplatManager hitsplatManager)
     {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.UNDER_WIDGETS);
-        this.plugin = plugin;
         this.config = config;
         this.client = client;
+        this.hitsplatManager = hitsplatManager;
     }
 
     @Override
     public Dimension render(Graphics2D graphics)
     {
-        if (HitsplatManager.hitsplatList.isEmpty()){
+        Map<Actor, ActorHitsplats> actors = hitsplatManager.getActors();
+        if (actors.isEmpty()){
             return null;
         }
 
-        for (Map.Entry<Actor, CopyOnWriteArrayList<ManagedHitsplat>> entry : HitsplatManager.hitsplatList.entrySet()){
-            HitsplatCategoryEnum hitsplatCategoryEnumConfig = config.hitsplatCategoryEnum();
+        int gameCycle = client.getGameCycle();
+        for (Map.Entry<Actor, ActorHitsplats> entry : actors.entrySet()){
             Actor actor = entry.getKey();
-            CopyOnWriteArrayList<ManagedHitsplat> hitsplats = entry.getValue();
-            switch (hitsplatCategoryEnumConfig){
-                case Every_Hitsplat:
-                    drawExtendedHitsplats(graphics, actor, hitsplats);
-                    break;
-                case Single_Normal:
-                case Single_BIG:
-                    drawSingleHitsplat(graphics, actor, hitsplats, hitsplatCategoryEnumConfig);
-                    break;
+            Point anchor = actor.getCanvasImageLocation(REFERENCE_ICON, actor.getLogicalHeight()/2);
+            if (anchor == null){
+                continue;
             }
+            int centerX = anchor.getX() + REFERENCE_ICON.getWidth()/2 + 1;
+            int centerY = anchor.getY() + REFERENCE_ICON.getHeight()/2 - 1;
+            drawHitsplats(graphics, entry.getValue(), gameCycle, centerX, centerY);
         }
         return null;
     }
 
-    private void drawExtendedHitsplats(Graphics2D graphics, Actor actor, List<ManagedHitsplat> hitsplats){
-        // normal hitsplat construction
-        int missOffset = 0;
-        for (ManagedHitsplat managedHitsplat : hitsplats) {
-            int position = managedHitsplat.position;
-            Hitsplat hitsplat = managedHitsplat.hitsplat;
-            int damage = hitsplat.getAmount();
-            int hitsplatType = hitsplat.getHitsplatType();
-
-            if (position >= config.maxHitsplats()) {
-                continue;
-            }
-
-            if ((damage == 0) & (config.removeZeros())) {
-                missOffset += 1;
-                continue;
-            }
-
-            if (config.hitsplat2010()){
-                damage = damage * 10;
-            }
-
-            BufferedImage hitsplatImage = drawHitsplat(hitsplatType, damage, FontManager.getRunescapeSmallFont(), position);
-            Point cPoint = actor.getCanvasImageLocation(hitsplatImage, actor.getLogicalHeight()/2);
-
-            if (cPoint == null){
-                continue;
-            }
-
-            Point p = new Point(cPoint.getX()+1, cPoint.getY()-1);
-            Point k = SplatPoints.splatPoints.get(position);
-            OverlayUtil.renderImageLocation(graphics, new Point(p.getX()+k.getX(), p.getY()+k.getY()), hitsplatImage);
-        }
-    }
-
-    private void drawSingleHitsplat(Graphics2D graphics, Actor actor, List<ManagedHitsplat> hitsplats, HitsplatCategoryEnum hitsplatCategoryEnum){
-        // makes one big hitsplat with the cumulative amount of tick damage per actor
-        int damage = 0;
-        for (ManagedHitsplat managedHitsplat : hitsplats) {
-            if (managedHitsplat.hitsplat.getHitsplatType() != HitsplatID.HEAL){
-                damage += managedHitsplat.hitsplat.getAmount();
-            }
-        }
-
-        if ((damage == 0) & (config.removeZeros())){
-            return;
-        }
-
-        if (config.hitsplat2010()){
-            damage = damage * 10;
-        }
-
-        int hitsplatType = HitsplatID.DAMAGE_MAX_ME;
+    // The game's hitsplat backgrounds are blanked, but it still draws their numbers, so the first four
+    // slots sit exactly over the game's to cover them
+    private void drawHitsplats(Graphics2D graphics, ActorHitsplats hitsplats, int gameCycle, int centerX, int centerY){
+        int perSide = config.extrasPerSide();
+        int cellWidth = REFERENCE_ICON.getWidth() + CELL_GAP;
+        int cellHeight = REFERENCE_ICON.getHeight() + CELL_GAP;
         Font font = FontManager.getRunescapeSmallFont();
-        switch (hitsplatCategoryEnum){
-            case Single_Normal:
-                hitsplatType = HitsplatID.DAMAGE_MAX_ME;
-                font = FontManager.getRunescapeSmallFont();
-                break;
-            case Single_BIG:
-                hitsplatType = -1;
-                font = FontManager.getRunescapeBoldFont();
-                break;
+
+        for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
+            Hitsplat hitsplat = managedHitsplat.hitsplat;
+            if (hitsplat.getDisappearsOnGameCycle() <= gameCycle) {
+                continue;
+            }
+
+            BufferedImage icon = iconFor(hitsplat.getHitsplatType());
+            if (icon == null) {
+                continue;
+            }
+
+            Point offset = SplatPoints.offset(managedHitsplat.position, perSide, cellWidth, cellHeight);
+            drawHitsplat(graphics, icon, String.valueOf(hitsplat.getAmount()), font, centerX + offset.getX(), centerY + offset.getY());
         }
-
-        BufferedImage hitsplatImage = drawHitsplat(hitsplatType, damage, font, 0);
-        Point cPoint = actor.getCanvasImageLocation(hitsplatImage, actor.getLogicalHeight()/2);
-
-        if (cPoint == null){
-            return;
-        }
-
-        Point p = new Point(cPoint.getX()+1, cPoint.getY()-1);
-        OverlayUtil.renderImageLocation(graphics, new Point(p.getX(), p.getY()), hitsplatImage);
     }
 
-    private BufferedImage drawHitsplat(int hitsplat_type, int damage, Font font, int position){
-        ImageIcon hitIcon;
+    private static void drawHitsplat(Graphics2D graphics, BufferedImage icon, String text, Font font, int centerX, int centerY){
+        int x = centerX - icon.getWidth()/2;
+        int y = centerY - icon.getHeight()/2;
+        graphics.drawImage(icon, x, y, null);
+
+        graphics.setFont(font);
+        FontMetrics metrics = graphics.getFontMetrics();
+        int textX = x + (icon.getWidth() - metrics.stringWidth(text)) / 2;
+        int textY = y + (icon.getHeight() - metrics.getHeight()) / 2 + metrics.getAscent();
+        // draw shadow
+        graphics.setColor(Color.black);
+        graphics.drawString(text, textX+1, textY+1);
+        // draw normal text
+        graphics.setColor(Color.white);
+        graphics.drawString(text, textX, textY);
+    }
+
+    private static BufferedImage iconFor(int hitsplat_type){
+        BufferedImage hitIcon;
         switch (hitsplat_type){
             case HitsplatID.BLEED:
                 hitIcon = Icons.OSRS_BLEED_HITSPLAT;
@@ -265,47 +237,10 @@ public class ExtendedHitsplatsOverlay extends Overlay
             case HitsplatID.VENOM:
                 hitIcon = Icons.OSRS_VENOM_HITSPLAT;
                 break;
-            case -1:
-                hitIcon = Icons.OSRS_BIG_HITSPLAT;
-                break;
             default:
-                return new BufferedImage(0,0,0);
+                // unknown hitsplat ids are sometimes sent, skip them rather than guess
+                return null;
         }
-        BufferedImage bi = iconToBuffered(hitIcon);
-        Graphics g = bi.getGraphics();
-        bi = drawCenteredDamageNumbers(g, String.valueOf(damage), bi, font);
-        g.dispose();
-        return bi;
-    }
-
-    public BufferedImage drawCenteredDamageNumbers(Graphics g, String text, BufferedImage bi, Font font) {
-        FontMetrics metrics = g.getFontMetrics(font);
-        int x = (bi.getWidth() - metrics.stringWidth(text)) / 2;
-        int y = ((bi.getHeight() - metrics.getHeight()) / 2) + metrics.getAscent();
-        g.setFont(font);
-        // draw shadow
-        g.setColor(Color.black);
-        g.drawString(text, x+1, y+1);
-        // draw normal text
-        g.setColor(Color.white);
-        g.drawString(text, x, y);
-        return bi;
-    }
-
-    private BufferedImage iconToBuffered(ImageIcon icon){
-        Image image = icon.getImage();
-        int height = icon.getIconHeight();
-        int width = icon.getIconWidth();
-        Image tempImage = image.getScaledInstance(width, height,  java.awt.Image.SCALE_SMOOTH);
-        ImageIcon sizedImageIcon = new ImageIcon(tempImage);
-
-        BufferedImage bi = new BufferedImage(
-                sizedImageIcon.getIconWidth(),
-                sizedImageIcon.getIconHeight(),
-                BufferedImage.TYPE_INT_ARGB);
-        Graphics g = bi.createGraphics();
-        sizedImageIcon.paintIcon(null, g, 0,0);
-        g.dispose();
-        return bi;
+        return hitIcon;
     }
 }

@@ -1,11 +1,10 @@
 package com.extendedhitsplats.utils;
 
-import net.runelite.api.Actor;
 import net.runelite.api.Hitsplat;
 
 public class ManagedHitsplat {
-    public Hitsplat hitsplat;
-    public int position;
+    public final Hitsplat hitsplat;
+    public final int position;
 
     public ManagedHitsplat(Hitsplat hitsplat, int position)
     {

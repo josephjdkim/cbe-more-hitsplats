@@ -6,42 +6,14 @@ import net.runelite.client.config.*;
 public interface ExtendedHitsplatsConfig extends Config
 {
 	@ConfigItem(
-			position = 1,
-			keyName = "maxHitsplats",
-			name = "Max Hitsplats",
-			description = "Select the maximum number of hitsplats to display per actor."
+			position = 0,
+			keyName = "extrasPerSide",
+			name = "Extras Per Side",
+			description = "How many extra hitsplats fit in each row of the left and right halves. Each tick's extras use the opposite half from the tick before."
 	)
-	@Range(min = 4, max = 255)
-	default int maxHitsplats()
+	@Range(min = 1, max = 5)
+	default int extrasPerSide()
 	{
-		return 255;
+		return 2;
 	}
-
-	@ConfigItem(
-			position = 2,
-			keyName = "singleHitsplat",
-			name = "Hitsplat Type",
-			description = "The type of hitsplat you would like to see in-game."
-	)
-	default HitsplatCategoryEnum hitsplatCategoryEnum(){return HitsplatCategoryEnum.Every_Hitsplat;}
-
-	@ConfigItem(
-			position = 3,
-			keyName = "removeZeros",
-			name = "Remove Zeros",
-			description = "Hide hitsplats with zeros or misses."
-	)
-	default boolean removeZeros()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			position = 4,
-			keyName = "hitSplat2010",
-			name = "2010 Hitsplat",
-			description = "Multiply your hitsplat by 10, just like in 2010!"
-	)
-	default boolean hitsplat2010(){return false;}
-
 }

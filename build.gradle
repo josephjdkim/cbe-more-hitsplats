@@ -30,3 +30,14 @@ sourceCompatibility = '1.8'
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 }
+
+// Launches RuneLite in developer mode with this plugin loaded: ./gradlew run
+tasks.register('run', JavaExec) {
+	group = 'application'
+	description = 'Runs RuneLite in developer mode with this plugin loaded'
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.extendedhitsplats.ExtendedHitsplatsPluginTest'
+	jvmArgs '-ea'
+	// Use a profile without the Plugin Hub copy installed, or both copies run. Override with -PruneliteProfile=...
+	args '--developer-mode', "--profile=${findProperty('runeliteProfile') ?: 'Extended Hitsplats Dev'}"
+}

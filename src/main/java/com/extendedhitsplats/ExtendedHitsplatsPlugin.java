@@ -28,14 +28,15 @@ package com.extendedhitsplats;
 
 import com.extendedhitsplats.overlays.ExtendedHitsplatsOverlay;
 import com.extendedhitsplats.utils.HitsplatManager;
-import com.extendedhitsplats.utils.ManagedHitsplat;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Actor;
 import net.runelite.api.Client;
-import net.runelite.api.Hitsplat;
+import net.runelite.api.GameState;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.PlayerDespawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
@@ -43,12 +44,7 @@ import net.runelite.client.game.SpriteOverride;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @PluginDescriptor(
@@ -59,15 +55,14 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	@Inject
 	private Client client;
 	@Inject
-	private ExtendedHitsplatsConfig config;
-	@Inject
 	private OverlayManager overlayManager;
 	@Inject
 	private ExtendedHitsplatsOverlay overlay;
 	@Inject
 	private SpriteManager spriteManager;
+	@Inject
+	private HitsplatManager hitsplatManager;
 	private final SpriteOverride[] overrides = new SpriteOverride[Sprites.ALL_SPRITES.length];
-	private int debug = 0;
 
 	@Override
 	protected void startUp() throws Exception
@@ -89,6 +84,7 @@ public class ExtendedHitsplatsPlugin extends Plugin
 				};
 			}
 		}
+		// Blank the game's hitsplat backgrounds; the overlay draws over the numbers it still shows
 		spriteManager.addSpriteOverrides(overrides);
 	}
 
@@ -97,40 +93,34 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		spriteManager.removeSpriteOverrides(overrides);
+		hitsplatManager.clear();
 	}
 
 	@Subscribe
 	public void onHitsplatApplied(HitsplatApplied hitsplatApplied){
-		HitsplatManager.add(hitsplatApplied);
+		hitsplatManager.add(hitsplatApplied.getActor(), hitsplatApplied.getHitsplat(), client.getGameCycle(), client.getTickCount());
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick gameTick){
-		int clientGameCycle = client.getGameCycle();
-		if (HitsplatManager.hitsplatList.isEmpty()){
-			return;
-		}
+		hitsplatManager.prune(client.getGameCycle());
+	}
 
-		List<Actor> toRemoveActors = new ArrayList<>();
-		List<ManagedHitsplat> toRemoveSplats = new ArrayList<>();
-		for (Map.Entry<Actor, CopyOnWriteArrayList<ManagedHitsplat>> entry: HitsplatManager.hitsplatList.entrySet()) {
-			Actor actor = entry.getKey();
-			for (ManagedHitsplat managedHitsplat : entry.getValue()) {
-				int disappear = managedHitsplat.hitsplat.getDisappearsOnGameCycle();
-				if (clientGameCycle > disappear) {
-					toRemoveSplats.add(managedHitsplat);
-					HitsplatManager.releasePosition(actor, managedHitsplat.position);
-				}
-			}
-			if (HitsplatManager.hitsplatList.get(actor).isEmpty()) {
-				toRemoveActors.add(actor);
-			}
-			HitsplatManager.hitsplatList.get(actor).removeAll(toRemoveSplats);
-		}
+	@Subscribe
+	public void onNpcDespawned(NpcDespawned npcDespawned){
+		hitsplatManager.remove(npcDespawned.getNpc());
+	}
 
-		for (Actor actor : toRemoveActors) {
-			HitsplatManager.hitsplatList.remove(actor);
-			HitsplatManager.takenPositions.remove(actor);
+	@Subscribe
+	public void onPlayerDespawned(PlayerDespawned playerDespawned){
+		hitsplatManager.remove(playerDespawned.getPlayer());
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged){
+		GameState state = gameStateChanged.getGameState();
+		if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING) {
+			hitsplatManager.clear();
 		}
 	}
 
