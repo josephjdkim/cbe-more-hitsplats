@@ -52,10 +52,8 @@ import java.util.Map;
 
 public class ExtendedHitsplatsOverlay extends Overlay
 {
-    // Used to find each actor's hitsplat anchor and to size the grid cells
+    // Used to find each actor's hitsplat anchor
     private static final BufferedImage REFERENCE_ICON = Icons.OSRS_SELF_DAMAGE_HITSPLAT;
-    // Negative: the sprites' spiky edges are mostly transparent, so neighbours can overlap them a little
-    private static final int CELL_GAP = -2;
 
     private final ExtendedHitsplatsConfig config;
     private final Client client;
@@ -97,8 +95,6 @@ public class ExtendedHitsplatsOverlay extends Overlay
     // slots sit exactly over the game's to cover them
     private void drawHitsplats(Graphics2D graphics, ActorHitsplats hitsplats, int gameCycle, int centerX, int centerY){
         int perSide = config.extrasPerSide();
-        int cellWidth = REFERENCE_ICON.getWidth() + CELL_GAP;
-        int cellHeight = REFERENCE_ICON.getHeight() + CELL_GAP;
         Font font = FontManager.getRunescapeSmallFont();
 
         for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
@@ -112,7 +108,7 @@ public class ExtendedHitsplatsOverlay extends Overlay
                 continue;
             }
 
-            Point offset = SplatPoints.offset(managedHitsplat.position, perSide, cellWidth, cellHeight);
+            Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
             drawHitsplat(graphics, icon, String.valueOf(hitsplat.getAmount()), font, centerX + offset.getX(), centerY + offset.getY());
         }
     }

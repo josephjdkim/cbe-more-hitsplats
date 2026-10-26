@@ -28,39 +28,63 @@ package com.extendedhitsplats.points;
 import com.extendedhitsplats.utils.ActorHitsplats;
 import net.runelite.api.Point;
 
+/**
+ * Hitsplat positions, continuing the game's own staggered pattern. The game's four sit on a honeycomb:
+ * columns {@link #COLUMN_WIDTH} apart, each column stepping up {@link #ROW_HEIGHT}, with odd columns
+ * shifted down half a step. Extras fill that same honeycomb above the game's four.
+ */
 public class SplatPoints {
-    // How far the game's left and right hitsplats sit from the middle
-    private static final int VANILLA_SIDE_X = 16;
+    // Distance between neighbouring columns; also how far the game's left and right hitsplats sit from the middle
+    private static final int COLUMN_WIDTH = 16;
+    // Distance between hitsplats in one column
+    private static final int ROW_HEIGHT = 20;
     // The game's own four hitsplat positions, relative to the first one
     private static final Point[] VANILLA_POINTS = {
         new Point(0, 0),
-        new Point(0, -20),
-        new Point(-VANILLA_SIDE_X, -10),
-        new Point(VANILLA_SIDE_X, -10),
+        new Point(0, -ROW_HEIGHT),
+        new Point(-COLUMN_WIDTH, -ROW_HEIGHT / 2),
+        new Point(COLUMN_WIDTH, -ROW_HEIGHT / 2),
     };
-    // Slot 1, the highest of the game's four, is centered this far above the anchor
-    private static final int VANILLA_TOP = 20;
-    // Extra space between the game's hitsplats and the first row of extras
-    private static final int EXTRA_LIFT = 4;
+    // Height of the lowest level of extras: just above the odd columns' game hitsplat
+    private static final int FIRST_EXTRA_Y = -ROW_HEIGHT - ROW_HEIGHT / 2;
 
     /**
      * Offset of a hitsplat slot from the actor's hitsplat anchor, to the hitsplat's center.
-     * Slots 0-3 match the game's layout. Extra slots (4 + 2 * index + side) go in a left or right half
-     * above the game's cluster: rows of {@code perSide} filling outward from the middle, stacking upward.
-     * Each half's inner column lines up with the game's hitsplat on that side.
+     * Slots 0-3 match the game's layout. Extra slots (4 + 2 * index + side) go in the left or right half
+     * of the honeycomb above the game's four, {@code perSide} columns wide, filling the lowest free level
+     * first and the middle outward. The middle column's cells alternate between the halves, level by level.
      */
-    public static Point offset(int slot, int perSide, int cellWidth, int cellHeight) {
+    public static Point offset(int slot, int perSide) {
         if (slot < VANILLA_POINTS.length) {
             return VANILLA_POINTS[slot];
         }
         int extra = slot - VANILLA_POINTS.length;
         int side = extra % 2;
         int index = extra / 2;
-        int row = index / perSide;
-        int column = index % perSide;
-        int x = VANILLA_SIDE_X + column * cellWidth;
-        // First row starts half a row (plus a little breathing room) above the game's highest hitsplat
-        int y = -VANILLA_TOP - cellHeight / 2 - EXTRA_LIFT - row * cellHeight;
-        return new Point(side == ActorHitsplats.LEFT ? -x : x, y);
+        int sign = side == ActorHitsplats.LEFT ? -1 : 1;
+
+        // Each level is half a row above the last and alternates between odd and even columns
+        for (int level = 0; ; level++) {
+            int y = FIRST_EXTRA_Y - level * ROW_HEIGHT / 2;
+            boolean oddColumns = level % 2 == 0;
+            if (!oddColumns && ownsMiddle(side, y)) {
+                if (index == 0) {
+                    return new Point(0, y);
+                }
+                index--;
+            }
+            for (int column = oddColumns ? 1 : 2; column <= perSide; column += 2) {
+                if (index == 0) {
+                    return new Point(sign * column * COLUMN_WIDTH, y);
+                }
+                index--;
+            }
+        }
+    }
+
+    // The middle column's cells alternate between halves, starting with the left
+    private static boolean ownsMiddle(int side, int y) {
+        int cell = -y / ROW_HEIGHT;
+        return cell % 2 == 0 ? side == ActorHitsplats.LEFT : side == ActorHitsplats.RIGHT;
     }
 }
