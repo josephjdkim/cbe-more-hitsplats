@@ -89,8 +89,7 @@ public class ExtendedHitsplatsOverlay extends Overlay
         return null;
     }
 
-    // The game's hitsplat backgrounds are blanked, but it still draws their numbers, so the first four
-    // slots sit exactly over the game's to cover them.
+    // Draws the extras; the game draws its own four positions itself.
     // Neighbouring hitsplats overlap at the corners, so every background is drawn before any number;
     // that way no hitsplat's background can clip another's number.
     private void drawHitsplats(Graphics2D graphics, ActorHitsplats hitsplats, int gameCycle, int centerX, int centerY){
@@ -115,9 +114,9 @@ public class ExtendedHitsplatsOverlay extends Overlay
         }
     }
 
-    // The hitsplat's icon, or null if it has expired or has no icon
+    // The hitsplat's icon, or null if the game is drawing it, it has expired, or it has no icon
     private static BufferedImage visibleIcon(ManagedHitsplat managedHitsplat, int gameCycle){
-        if (managedHitsplat.disappearsOnGameCycle <= gameCycle) {
+        if (managedHitsplat.position < ActorHitsplats.VANILLA_SLOTS || managedHitsplat.disappearsOnGameCycle <= gameCycle) {
             return null;
         }
         return iconFor(managedHitsplat.hitsplatType);

@@ -40,8 +40,6 @@ import net.runelite.api.events.PlayerDespawned;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.SpriteManager;
-import net.runelite.client.game.SpriteOverride;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -62,40 +60,18 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	@Inject
 	private ExtendedHitsplatsOverlay overlay;
 	@Inject
-	private SpriteManager spriteManager;
-	@Inject
 	private HitsplatManager hitsplatManager;
-	private final SpriteOverride[] overrides = new SpriteOverride[Sprites.ALL_SPRITES.length];
 
 	@Override
 	protected void startUp() throws Exception
 	{
 		overlayManager.add(overlay);
-		if (overrides[0] == null) {
-			for (int i = 0; i < Sprites.ALL_SPRITES.length; i++) {
-				int id = Sprites.ALL_SPRITES[i];
-				overrides[i] = new SpriteOverride() {
-					@Override
-					public int getSpriteId() {
-						return id;
-					}
-
-					@Override
-					public String getFileName() {
-						return "/com/extendedhitsplats/hitsplats/osrs/blank.png";
-					}
-				};
-			}
-		}
-		// Blank the game's hitsplat backgrounds; the overlay draws over the numbers it still shows
-		spriteManager.addSpriteOverrides(overrides);
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(overlay);
-		spriteManager.removeSpriteOverrides(overrides);
 		// shutDown runs on the Swing thread; the tracked hitsplats belong to the client thread
 		clientThread.invokeLater(hitsplatManager::clear);
 	}
