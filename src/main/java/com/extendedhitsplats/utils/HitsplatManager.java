@@ -9,6 +9,9 @@ import java.util.Map;
 
 /**
  * Tracks hitsplats per actor. Only touched from the client thread (events and overlay rendering).
+ * <p>
+ * An actor's entry stays until it despawns, even with no hitsplats up, because it remembers which of the
+ * game's display objects belongs to which position.
  */
 @Singleton
 public class HitsplatManager {
@@ -21,7 +24,7 @@ public class HitsplatManager {
 
     public void prune(int gameCycle)
     {
-        actors.values().removeIf(actorHitsplats -> actorHitsplats.prune(gameCycle));
+        actors.values().forEach(actorHitsplats -> actorHitsplats.prune(gameCycle));
     }
 
     public void remove(Actor actor)

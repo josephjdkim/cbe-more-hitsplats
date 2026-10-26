@@ -130,6 +130,24 @@ public class ActorHitsplatsTest
 		assertEquals(4, hitsplats.add(splat(2, 100), 60, 2).position);
 	}
 
+	private static RecycledHitsplat gameObject(int type, int amount, int disappearsOn)
+	{
+		RecycledHitsplat object = new RecycledHitsplat();
+		object.type = type;
+		object.amount = amount;
+		object.disappearsOn = disappearsOn;
+		return object;
+	}
+
+	// The game putting a new hit into one of its existing display objects
+	private static RecycledHitsplat reuse(RecycledHitsplat object, int type, int amount, int disappearsOn)
+	{
+		object.type = type;
+		object.amount = amount;
+		object.disappearsOn = disappearsOn;
+		return object;
+	}
+
 	@Test
 	public void vanillaOnlyTicksDoNotFlipSides()
 	{
@@ -137,33 +155,58 @@ public class ActorHitsplatsTest
 		hitsplats.add(splat(1, 1000), 0, 0);
 		hitsplats.add(splat(2, 1000), 0, 0);
 		hitsplats.add(splat(3, 1000), 0, 0);
-		hitsplats.add(splat(4, 25), 0, 0); // vanilla slot 3, frees up before tick 1
+		RecycledHitsplat fourth = gameObject(HitsplatID.DAMAGE_OTHER, 4, 25);
+		hitsplats.add(fourth, 0, 0);
 		assertEquals(4, hitsplats.add(splat(5, 1000), 0, 0).position); // left
-		// tick 1 only uses a game slot
-		assertEquals(3, hitsplats.add(splat(6, 1000), 30, 1).position);
+		// tick 1 only reuses a game position
+		assertEquals(3, hitsplats.add(reuse(fourth, HitsplatID.DAMAGE_OTHER, 6, 1000), 30, 1).position);
 		// tick 2 is the next tick with extras, so it flips to the right
 		assertEquals(5, hitsplats.add(splat(7, 1000), 60, 2).position);
 	}
 
 	@Test
-	public void vanillaSlotsAreRoundRobin()
+	public void reusedGameObjectKeepsItsPosition()
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
-		hitsplats.add(splat(1, 10), 0, 0);  // slot 0, expires first
-		hitsplats.add(splat(2, 100), 0, 0); // slot 1
-		// slot 0 is free again, but the game continues from slot 2
-		assertEquals(2, hitsplats.add(splat(3, 100), 20, 0).position);
-		assertEquals(3, hitsplats.add(splat(4, 100), 20, 0).position);
-		assertEquals(0, hitsplats.add(splat(5, 100), 20, 0).position);
+		RecycledHitsplat first = gameObject(HitsplatID.DAMAGE_OTHER, 1, 10);
+		RecycledHitsplat second = gameObject(HitsplatID.DAMAGE_OTHER, 2, 100);
+		assertEquals(0, hitsplats.add(first, 0, 0).position);
+		assertEquals(1, hitsplats.add(second, 0, 0).position);
+		// position 0 is free, but the game put this hit in its position-1 object
+		assertEquals(1, hitsplats.add(reuse(second, HitsplatID.DAMAGE_OTHER, 3, 150), 120, 4).position);
 	}
 
 	@Test
-	public void restartsAtSlotZeroOnceAllFree()
+	public void newObjectsOnceAllFourExistAreExtras()
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
-		hitsplats.add(splat(1, 10), 0, 0);
-		hitsplats.add(splat(2, 10), 0, 0);
-		assertEquals(0, hitsplats.add(splat(3, 100), 20, 0).position);
+		fillVanillaSlots(hitsplats, 10);
+		// all four game hits have expired, but a new object still means the game didn't show this hit
+		assertEquals(4, hitsplats.add(splat(9, 100), 20, 1).position);
+	}
+
+	@Test
+	public void hitTheGamePushedOutMovesToTheExtras()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		RecycledHitsplat[] game = new RecycledHitsplat[4];
+		for (int i = 0; i < 4; i++)
+		{
+			game[i] = gameObject(HitsplatID.DAMAGE_OTHER, 10 + i, 100);
+			hitsplats.add(game[i], 0, 0);
+		}
+
+		// your hit takes over position 2 while the other player's hit there is still up
+		ManagedHitsplat yours = hitsplats.add(reuse(game[2], HitsplatID.DAMAGE_ME, 25, 130), 30, 1);
+		assertEquals(2, yours.position);
+		assertEquals(HitsplatID.DAMAGE_ME, yours.hitsplatType);
+
+		ManagedHitsplat pushedOut = hitsplats.getHitsplats().stream().filter(h -> h.amount == 12).findFirst().get();
+		assertTrue(pushedOut.position >= ActorHitsplats.VANILLA_SLOTS);
+		assertEquals(HitsplatID.DAMAGE_OTHER, pushedOut.hitsplatType);
+		assertEquals(100, pushedOut.disappearsOnGameCycle);
+		// only one hit at position 2
+		assertEquals(1, hitsplats.getHitsplats().stream().filter(h -> h.position == 2).count());
 	}
 
 	@Test
