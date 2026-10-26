@@ -42,6 +42,56 @@ public class ActorHitsplatsTest
 		}
 	}
 
+	// Like the game's hitsplat objects, which it reuses for later hits
+	private static class RecycledHitsplat implements Hitsplat
+	{
+		int type = HitsplatID.DAMAGE_ME;
+		int amount;
+		int disappearsOn;
+
+		@Override
+		public int getHitsplatType()
+		{
+			return type;
+		}
+
+		@Override
+		public int getAmount()
+		{
+			return amount;
+		}
+
+		@Override
+		public int getDisappearsOnGameCycle()
+		{
+			return disappearsOn;
+		}
+	}
+
+	@Test
+	public void recycledHitsplatObjectsDoNotChangeOrReviveTrackedHitsplats()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		RecycledHitsplat object = new RecycledHitsplat();
+		object.amount = 7;
+		object.disappearsOn = 50;
+		ManagedHitsplat first = hitsplats.add(object, 0, 0);
+
+		// the game reuses the object for another player's hit after the first one expires
+		object.type = HitsplatID.DAMAGE_OTHER;
+		object.amount = 3;
+		object.disappearsOn = 110;
+		assertEquals(HitsplatID.DAMAGE_ME, first.hitsplatType);
+		assertEquals(7, first.amount);
+		assertEquals(50, first.disappearsOnGameCycle);
+
+		ManagedHitsplat second = hitsplats.add(object, 60, 2);
+		// the first hit expired and stays gone, rather than piling up alongside the new one
+		assertEquals(1, hitsplats.getHitsplats().size());
+		assertEquals(second, hitsplats.getHitsplats().get(0));
+		assertEquals(3, second.amount);
+	}
+
 	@Test
 	public void fillsVanillaSlotsThenLeftExtras()
 	{

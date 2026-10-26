@@ -33,7 +33,6 @@ import com.extendedhitsplats.utils.Icons;
 import com.extendedhitsplats.utils.ManagedHitsplat;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
-import net.runelite.api.Hitsplat;
 import net.runelite.api.HitsplatID;
 import net.runelite.api.Point;
 import net.runelite.client.ui.FontManager;
@@ -111,18 +110,17 @@ public class ExtendedHitsplatsOverlay extends Overlay
             BufferedImage icon = visibleIcon(managedHitsplat, gameCycle);
             if (icon != null) {
                 Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
-                drawNumber(graphics, metrics, icon, String.valueOf(managedHitsplat.hitsplat.getAmount()), centerX + offset.getX(), centerY + offset.getY());
+                drawNumber(graphics, metrics, icon, String.valueOf(managedHitsplat.amount), centerX + offset.getX(), centerY + offset.getY());
             }
         }
     }
 
     // The hitsplat's icon, or null if it has expired or has no icon
     private static BufferedImage visibleIcon(ManagedHitsplat managedHitsplat, int gameCycle){
-        Hitsplat hitsplat = managedHitsplat.hitsplat;
-        if (hitsplat.getDisappearsOnGameCycle() <= gameCycle) {
+        if (managedHitsplat.disappearsOnGameCycle <= gameCycle) {
             return null;
         }
-        return iconFor(hitsplat.getHitsplatType());
+        return iconFor(managedHitsplat.hitsplatType);
     }
 
     private static void drawNumber(Graphics2D graphics, FontMetrics metrics, BufferedImage icon, String text, int centerX, int centerY){

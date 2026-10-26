@@ -119,7 +119,7 @@ public class ActorHitsplats
 	 */
 	public boolean prune(int gameCycle)
 	{
-		hitsplats.removeIf(h -> h.hitsplat.getDisappearsOnGameCycle() <= gameCycle);
+		hitsplats.removeIf(h -> h.disappearsOnGameCycle <= gameCycle);
 		return hitsplats.isEmpty();
 	}
 
