@@ -44,7 +44,6 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import javax.inject.Inject;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -92,34 +91,43 @@ public class ExtendedHitsplatsOverlay extends Overlay
     }
 
     // The game's hitsplat backgrounds are blanked, but it still draws their numbers, so the first four
-    // slots sit exactly over the game's to cover them
+    // slots sit exactly over the game's to cover them.
+    // Neighbouring hitsplats overlap at the corners, so every background is drawn before any number;
+    // that way no hitsplat's background can clip another's number.
     private void drawHitsplats(Graphics2D graphics, ActorHitsplats hitsplats, int gameCycle, int centerX, int centerY){
         int perSide = config.extrasPerSide();
-        Font font = FontManager.getRunescapeSmallFont();
 
         for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
-            Hitsplat hitsplat = managedHitsplat.hitsplat;
-            if (hitsplat.getDisappearsOnGameCycle() <= gameCycle) {
-                continue;
+            BufferedImage icon = visibleIcon(managedHitsplat, gameCycle);
+            if (icon != null) {
+                Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
+                graphics.drawImage(icon, centerX + offset.getX() - icon.getWidth()/2, centerY + offset.getY() - icon.getHeight()/2, null);
             }
+        }
 
-            BufferedImage icon = iconFor(hitsplat.getHitsplatType());
-            if (icon == null) {
-                continue;
+        graphics.setFont(FontManager.getRunescapeSmallFont());
+        FontMetrics metrics = graphics.getFontMetrics();
+        for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
+            BufferedImage icon = visibleIcon(managedHitsplat, gameCycle);
+            if (icon != null) {
+                Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
+                drawNumber(graphics, metrics, icon, String.valueOf(managedHitsplat.hitsplat.getAmount()), centerX + offset.getX(), centerY + offset.getY());
             }
-
-            Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
-            drawHitsplat(graphics, icon, String.valueOf(hitsplat.getAmount()), font, centerX + offset.getX(), centerY + offset.getY());
         }
     }
 
-    private static void drawHitsplat(Graphics2D graphics, BufferedImage icon, String text, Font font, int centerX, int centerY){
+    // The hitsplat's icon, or null if it has expired or has no icon
+    private static BufferedImage visibleIcon(ManagedHitsplat managedHitsplat, int gameCycle){
+        Hitsplat hitsplat = managedHitsplat.hitsplat;
+        if (hitsplat.getDisappearsOnGameCycle() <= gameCycle) {
+            return null;
+        }
+        return iconFor(hitsplat.getHitsplatType());
+    }
+
+    private static void drawNumber(Graphics2D graphics, FontMetrics metrics, BufferedImage icon, String text, int centerX, int centerY){
         int x = centerX - icon.getWidth()/2;
         int y = centerY - icon.getHeight()/2;
-        graphics.drawImage(icon, x, y, null);
-
-        graphics.setFont(font);
-        FontMetrics metrics = graphics.getFontMetrics();
         int textX = x + (icon.getWidth() - metrics.stringWidth(text)) / 2;
         int textY = y + (icon.getHeight() - metrics.getHeight()) / 2 + metrics.getAscent();
         // draw shadow
@@ -210,6 +218,7 @@ public class ExtendedHitsplatsOverlay extends Overlay
                 hitIcon = Icons.OSRS_OTHER_CHARGE_HITSPLAT;
                 break;
             case HitsplatID.DISEASE:
+            case HitsplatID.DISEASE_BLOCKED:
                 hitIcon = Icons.OSRS_DISEASE_HITSPLAT;
                 break;
             case HitsplatID.DOOM:

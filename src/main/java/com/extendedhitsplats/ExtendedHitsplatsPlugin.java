@@ -37,6 +37,7 @@ import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.PlayerDespawned;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.SpriteManager;
@@ -54,6 +55,8 @@ public class ExtendedHitsplatsPlugin extends Plugin
 {
 	@Inject
 	private Client client;
+	@Inject
+	private ClientThread clientThread;
 	@Inject
 	private OverlayManager overlayManager;
 	@Inject
@@ -93,7 +96,8 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	{
 		overlayManager.remove(overlay);
 		spriteManager.removeSpriteOverrides(overrides);
-		hitsplatManager.clear();
+		// shutDown runs on the Swing thread; the tracked hitsplats belong to the client thread
+		clientThread.invokeLater(hitsplatManager::clear);
 	}
 
 	@Subscribe
