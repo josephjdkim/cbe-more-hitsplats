@@ -5,6 +5,7 @@ import net.runelite.api.HitsplatID;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ActorHitsplatsTest
@@ -198,15 +199,94 @@ public class ActorHitsplatsTest
 
 		// your hit takes over position 2 while the other player's hit there is still up
 		ManagedHitsplat yours = hitsplats.add(reuse(game[2], HitsplatID.DAMAGE_ME, 25, 130), 30, 1);
+		assertTrue(yours.shownByGame);
 		assertEquals(2, yours.position);
 		assertEquals(HitsplatID.DAMAGE_ME, yours.hitsplatType);
 
 		ManagedHitsplat pushedOut = hitsplats.getHitsplats().stream().filter(h -> h.amount == 12).findFirst().get();
+		assertFalse(pushedOut.shownByGame);
 		assertTrue(pushedOut.position >= ActorHitsplats.VANILLA_SLOTS);
 		assertEquals(HitsplatID.DAMAGE_OTHER, pushedOut.hitsplatType);
 		assertEquals(100, pushedOut.disappearsOnGameCycle);
-		// only one hit at position 2
-		assertEquals(1, hitsplats.getHitsplats().stream().filter(h -> h.position == 2).count());
+		// only one hit the game shows at position 2
+		assertEquals(1, hitsplats.getHitsplats().stream().filter(h -> h.shownByGame && h.position == 2).count());
+	}
+
+	@Test
+	public void hitTheGameDidNotShowBeforeFourPositionsHeals()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		RecycledHitsplat[] game = new RecycledHitsplat[4];
+		for (int i = 0; i < 4; i++)
+		{
+			game[i] = gameObject(HitsplatID.DAMAGE_OTHER, 10 + i, 100);
+		}
+		hitsplats.add(game[0], 0, 0);
+		// the server limits this hit to one position, which is taken, so the game doesn't show it; it's taken for
+		// a new game position, so it's lost
+		assertTrue(hitsplats.add(splat(9, 100), 0, 0).shownByGame);
+		hitsplats.add(game[1], 0, 0);
+		hitsplats.add(game[2], 0, 0);
+
+		// the game's fourth position looks like an extra the first time
+		assertFalse(hitsplats.add(game[3], 0, 0).shownByGame);
+		// once it comes back it's known to be the game's, and the hit it replaced stays an extra
+		ManagedHitsplat reused = hitsplats.add(reuse(game[3], HitsplatID.DAMAGE_OTHER, 20, 130), 30, 1);
+		assertTrue(reused.shownByGame);
+		assertFalse(hitsplats.getHitsplats().stream().filter(h -> h.amount == 13).findFirst().get().shownByGame);
+		assertTrue(hitsplats.add(reuse(game[3], HitsplatID.DAMAGE_OTHER, 21, 200), 140, 4).shownByGame);
+	}
+
+	@Test
+	public void fifthGamePositionIsLearnedWithoutClashingWithExtras()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		RecycledHitsplat[] game = new RecycledHitsplat[5];
+		for (int i = 0; i < 5; i++)
+		{
+			game[i] = gameObject(HitsplatID.DAMAGE_OTHER, i, 20);
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			hitsplats.add(game[i], 0, 0);
+		}
+		// the server allowed a fifth position; the first time it looks like an extra
+		ManagedHitsplat first = hitsplats.add(game[4], 0, 0);
+		assertFalse(first.shownByGame);
+		assertEquals(4, first.position);
+
+		// it comes back, so it's the game's fifth position
+		ManagedHitsplat fifth = hitsplats.add(reuse(game[4], HitsplatID.DAMAGE_OTHER, 7, 100), 30, 1);
+		assertTrue(fifth.shownByGame);
+		assertEquals(4, fifth.position);
+
+		// a hit the game doesn't show still gets extra slot 4, apart from the game's position 4
+		ManagedHitsplat extra = hitsplats.add(splat(8, 100), 30, 1);
+		assertFalse(extra.shownByGame);
+		assertEquals(4, extra.position);
+		assertEquals(2, hitsplats.getHitsplats().size());
+	}
+
+	@Test
+	public void trackingThatStartsMidFightHeals()
+	{
+		// the game's four positions already exist from before tracking started, all showing hits
+		RecycledHitsplat[] game = new RecycledHitsplat[4];
+		for (int i = 0; i < 4; i++)
+		{
+			game[i] = gameObject(HitsplatID.DAMAGE_OTHER, i, 50);
+		}
+		ActorHitsplats hitsplats = new ActorHitsplats();
+
+		// all four are taken, so the game doesn't show this hit; it's taken for the first game position and lost
+		assertTrue(hitsplats.add(splat(9, 60), 10, 0).shownByGame);
+		hitsplats.add(reuse(game[0], HitsplatID.DAMAGE_OTHER, 10, 90), 30, 1);
+		hitsplats.add(reuse(game[1], HitsplatID.DAMAGE_OTHER, 11, 90), 30, 1);
+		hitsplats.add(reuse(game[2], HitsplatID.DAMAGE_OTHER, 12, 90), 30, 1);
+
+		// the last game position looks like an extra once, then is known to be the game's
+		assertFalse(hitsplats.add(reuse(game[3], HitsplatID.DAMAGE_OTHER, 13, 90), 30, 1).shownByGame);
+		assertTrue(hitsplats.add(reuse(game[3], HitsplatID.DAMAGE_OTHER, 14, 150), 100, 3).shownByGame);
 	}
 
 	@Test

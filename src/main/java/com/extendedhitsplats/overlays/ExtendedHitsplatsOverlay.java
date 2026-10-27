@@ -116,7 +116,7 @@ public class ExtendedHitsplatsOverlay extends Overlay
 
     // The hitsplat's icon, or null if the game is drawing it, it has expired, or it has no icon
     private static BufferedImage visibleIcon(ManagedHitsplat managedHitsplat, int gameCycle){
-        if (managedHitsplat.position < ActorHitsplats.VANILLA_SLOTS || managedHitsplat.disappearsOnGameCycle <= gameCycle) {
+        if (managedHitsplat.shownByGame || managedHitsplat.disappearsOnGameCycle <= gameCycle) {
             return null;
         }
         return iconFor(managedHitsplat.hitsplatType);
