@@ -344,11 +344,37 @@ public class ActorHitsplatsTest
 		hitsplats.setExactDamage(40, 0);
 		// only one hitsplat came, but the HP lost shows there were more
 		assertEquals(OptionalInt.of(40), hitsplats.visibleTotal(10));
+		assertTrue(hitsplats.isTotalExact());
 
 		// a new tick starts without it
 		hitsplats.add(splat(4, 80), 30, 1);
 		hitsplats.add(splat(6, 80), 30, 1);
 		assertEquals(OptionalInt.of(10), hitsplats.visibleTotal(40));
+		assertFalse(hitsplats.isTotalExact());
+	}
+
+	@Test
+	public void exactDamageMatchingTheHitsplatsConfirmsThem()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.add(splat(9, 50), 0, 0);
+		assertFalse(hitsplats.isTotalExact());
+
+		hitsplats.setExactDamage(12, 0);
+		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(10));
+		assertTrue(hitsplats.isTotalExact());
+	}
+
+	@Test
+	public void noHpLostStillConfirmsMisses()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(0, 50), 0, 0);
+		hitsplats.add(splat(0, 50), 0, 0);
+		hitsplats.setExactDamage(0, 0);
+		assertEquals(OptionalInt.of(0), hitsplats.visibleTotal(10));
+		assertTrue(hitsplats.isTotalExact());
 	}
 
 	@Test
@@ -359,6 +385,14 @@ public class ActorHitsplatsTest
 		hitsplats.add(splat(9, 50), 0, 0);
 		hitsplats.setExactDamage(7, 0);
 		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(10));
+		// healing hides how much was dealt, so the total is the hitsplats' again
+		assertFalse(hitsplats.isTotalExact());
+
+		hitsplats.add(splat(3, 80), 30, 1);
+		hitsplats.add(splat(9, 80), 30, 1);
+		hitsplats.setExactDamage(-5, 1);
+		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(40));
+		assertFalse(hitsplats.isTotalExact());
 	}
 
 	@Test
@@ -368,6 +402,7 @@ public class ActorHitsplatsTest
 		hitsplats.add(splat(3, 50), 0, 0);
 		hitsplats.setExactDamage(40, 1);
 		assertFalse(hitsplats.visibleTotal(10).isPresent());
+		assertFalse(hitsplats.isTotalExact());
 	}
 
 	@Test

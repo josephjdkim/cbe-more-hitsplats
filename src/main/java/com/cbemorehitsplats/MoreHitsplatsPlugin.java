@@ -141,7 +141,7 @@ public class MoreHitsplatsPlugin extends Plugin
 	{
 		NPC npc = hpBarNpc();
 		int hp = client.getVarbitValue(VarbitID.HPBAR_HUD_HP);
-		if (npc != null && npc == hpBarNpc && hp < lastHpBarHp) {
+		if (npc != null && npc == hpBarNpc) {
 			hitsplatManager.setExactDamage(npc, lastHpBarHp - hp, tick);
 		}
 		hpBarNpc = npc;

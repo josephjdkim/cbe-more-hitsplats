@@ -49,7 +49,8 @@ public class ActorHitsplats
 	private int totalDamage;
 	private int totalHits;
 	private int totalDisappearsOnGameCycle;
-	// From the boss HP bar, when the actor has one; 0 when not known
+	// From the boss HP bar, when the actor has one
+	private boolean totalExactDamageKnown;
 	private int totalExactDamage;
 	// The game's display objects for this actor, by position. Can include a hit the game didn't show, taken for a
 	// new position; it's never seen again, so it only fills a place.
@@ -115,6 +116,7 @@ public class ActorHitsplats
 			totalDamage = 0;
 			totalHits = 0;
 			totalDisappearsOnGameCycle = 0;
+			totalExactDamageKnown = false;
 			totalExactDamage = 0;
 		}
 		totalDamage += hit.amount;
@@ -148,8 +150,19 @@ public class ActorHitsplats
 	{
 		if (tick == totalTick)
 		{
-			totalExactDamage = damage;
+			totalExactDamageKnown = true;
+			// HP can go up, when the actor heals
+			totalExactDamage = Math.max(damage, 0);
 		}
+	}
+
+	/**
+	 * True if the latest tick's total is the HP the actor lost, so it can't be missing hits. Otherwise it adds
+	 * up the hitsplats, and the server may have left some out.
+	 */
+	public boolean isTotalExact()
+	{
+		return totalExactDamageKnown && totalExactDamage >= totalDamage;
 	}
 
 	/**

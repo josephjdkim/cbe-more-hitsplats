@@ -125,11 +125,16 @@ public class MoreHitsplatsOverlay extends Overlay
         }
     }
 
-    // The damage the actor took this tick, on a large hitsplat below the game's four and your estimated hit
-    private static void drawTotal(Graphics2D graphics, ActorHitsplats actorHitsplats, int gameCycle, int centerX, int centerY){
+    // The damage the actor took this tick, on a large hitsplat below the game's four and your estimated hit.
+    // A * marks a total that may be missing hits the server left out.
+    private void drawTotal(Graphics2D graphics, ActorHitsplats actorHitsplats, int gameCycle, int centerX, int centerY){
         OptionalInt total = actorHitsplats.visibleTotal(gameCycle);
         if (!total.isPresent()) {
             return;
+        }
+        String text = String.valueOf(total.getAsInt());
+        if (config.markUncertainTotals() && !actorHitsplats.isTotalExact()) {
+            text += "*";
         }
         BufferedImage icon = Icons.OSRS_BIG_HITSPLAT;
         Point offset = SplatPoints.totalOffset(REFERENCE_ICON.getHeight(), icon.getHeight());
@@ -137,7 +142,7 @@ public class MoreHitsplatsOverlay extends Overlay
         int y = centerY + offset.getY();
         graphics.drawImage(icon, x - icon.getWidth()/2, y - icon.getHeight()/2, null);
         graphics.setFont(FontManager.getRunescapeSmallFont());
-        drawNumber(graphics, graphics.getFontMetrics(), icon, String.valueOf(total.getAsInt()), x, y);
+        drawNumber(graphics, graphics.getFontMetrics(), icon, text, x, y);
     }
 
     // The hitsplat's icon, or null if the game is drawing it, it has expired, or it has no icon
