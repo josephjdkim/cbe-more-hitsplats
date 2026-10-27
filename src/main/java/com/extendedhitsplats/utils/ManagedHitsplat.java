@@ -1,18 +1,22 @@
 package com.extendedhitsplats.utils;
 
 import net.runelite.api.Hitsplat;
+import net.runelite.api.HitsplatID;
 
 /**
  * A copy of a hitsplat's values, taken when it was applied. The game reuses its hitsplat objects for later
  * hits, so holding on to one would let an expired hitsplat take on a newer hit's values.
  */
 public class ManagedHitsplat {
+    // How long the game shows a hitsplat, in client cycles
+    private static final int DURATION_CYCLES = 50;
+
     public final int hitsplatType;
     public final int amount;
     public final int disappearsOnGameCycle;
     // True if the game draws this hit itself
     public final boolean shownByGame;
-    // The game's position for this hit if it shows it, otherwise the extra slot the overlay draws it in
+    // The game's position for this hit if it shows it, otherwise the slot the overlay draws it in
     public final int position;
 
     public ManagedHitsplat(Hitsplat hitsplat, boolean shownByGame, int position)
@@ -27,6 +31,12 @@ public class ManagedHitsplat {
         this.disappearsOnGameCycle = disappearsOnGameCycle;
         this.shownByGame = shownByGame;
         this.position = position;
+    }
+
+    // Your hit, worked out from your XP, shown from now for as long as the game shows a hitsplat
+    public static ManagedHitsplat estimatedOwnHit(int amount, int gameCycle)
+    {
+        return new ManagedHitsplat(HitsplatID.DAMAGE_ME, amount, gameCycle + DURATION_CYCLES, false, ActorHitsplats.ESTIMATED_OWN_HIT_SLOT);
     }
 
     // The same hit in an extra slot, once the game stops showing it

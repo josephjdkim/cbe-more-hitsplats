@@ -10,6 +10,9 @@ public class Icons {
     private static final Class<?> PLUGIN_CLASS = ExtendedHitsplatsPlugin.class;
     public static final BufferedImage OSRS_ALT_CHARGE_HITSPLAT = ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/alt_charge_hitsplat.png");
     public static final BufferedImage OSRS_ALT_UNCHARGE_HITSPLAT = ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/alt_uncharge_hitsplat.png");
+    // Scaled down from 48 to sit with the game's hitsplats
+    private static final int BIG_HITSPLAT_SIZE = 30;
+    public static final BufferedImage OSRS_BIG_HITSPLAT = ImageUtil.resizeImage(ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/big_hitsplat.png"), BIG_HITSPLAT_SIZE, BIG_HITSPLAT_SIZE);
     public static final BufferedImage OSRS_BLEED_HITSPLAT = ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/bleed_hitsplat.png");
     public static final BufferedImage OSRS_BURN_HITSPLAT = ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/burn_hitsplat.png");
     public static final BufferedImage OSRS_CORRUPTION_HITSPLAT = ImageUtil.loadImageResource(PLUGIN_CLASS, "/com/extendedhitsplats/hitsplats/osrs/corruption_hitsplat.png");

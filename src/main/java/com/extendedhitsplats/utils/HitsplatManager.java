@@ -22,6 +22,29 @@ public class HitsplatManager {
         actors.computeIfAbsent(actor, a -> new ActorHitsplats()).add(hitsplat, gameCycle, tick);
     }
 
+    public void addEstimatedOwnHit(Actor actor, int amount, int gameCycle, int tick)
+    {
+        actors.computeIfAbsent(actor, a -> new ActorHitsplats()).addEstimatedOwnHit(amount, gameCycle, tick);
+    }
+
+    public void removeEstimatedOwnHit(Actor actor)
+    {
+        ActorHitsplats actorHitsplats = actors.get(actor);
+        if (actorHitsplats != null)
+        {
+            actorHitsplats.removeEstimatedOwnHit();
+        }
+    }
+
+    public void setExactDamage(Actor actor, int damage, int tick)
+    {
+        ActorHitsplats actorHitsplats = actors.get(actor);
+        if (actorHitsplats != null)
+        {
+            actorHitsplats.setExactDamage(damage, tick);
+        }
+    }
+
     public void prune(int gameCycle)
     {
         actors.values().forEach(actorHitsplats -> actorHitsplats.prune(gameCycle));

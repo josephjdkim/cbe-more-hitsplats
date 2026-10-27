@@ -46,7 +46,10 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 public class ExtendedHitsplatsOverlay extends Overlay
 {
@@ -85,17 +88,25 @@ public class ExtendedHitsplatsOverlay extends Overlay
             int centerX = anchor.getX() + REFERENCE_ICON.getWidth()/2 + 1;
             int centerY = anchor.getY() + REFERENCE_ICON.getHeight()/2 - 1;
             drawHitsplats(graphics, entry.getValue(), gameCycle, centerX, centerY);
+            if (config.showLargeTotal()) {
+                drawTotal(graphics, entry.getValue(), gameCycle, centerX, centerY);
+            }
         }
         return null;
     }
 
-    // Draws the extras; the game draws its own four positions itself.
+    // Draws the extras and your estimated hit; the game draws its own four positions itself.
     // Neighbouring hitsplats overlap at the corners, so every background is drawn before any number;
     // that way no hitsplat's background can clip another's number.
-    private void drawHitsplats(Graphics2D graphics, ActorHitsplats hitsplats, int gameCycle, int centerX, int centerY){
+    private void drawHitsplats(Graphics2D graphics, ActorHitsplats actorHitsplats, int gameCycle, int centerX, int centerY){
         int perSide = config.extrasPerSide();
+        List<ManagedHitsplat> hitsplats = actorHitsplats.getHitsplats();
+        if (actorHitsplats.getEstimatedOwnHit() != null) {
+            hitsplats = new ArrayList<>(hitsplats);
+            hitsplats.add(actorHitsplats.getEstimatedOwnHit());
+        }
 
-        for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
+        for (ManagedHitsplat managedHitsplat : hitsplats) {
             BufferedImage icon = visibleIcon(managedHitsplat, gameCycle);
             if (icon != null) {
                 Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
@@ -105,13 +116,28 @@ public class ExtendedHitsplatsOverlay extends Overlay
 
         graphics.setFont(FontManager.getRunescapeSmallFont());
         FontMetrics metrics = graphics.getFontMetrics();
-        for (ManagedHitsplat managedHitsplat : hitsplats.getHitsplats()) {
+        for (ManagedHitsplat managedHitsplat : hitsplats) {
             BufferedImage icon = visibleIcon(managedHitsplat, gameCycle);
             if (icon != null) {
                 Point offset = SplatPoints.offset(managedHitsplat.position, perSide);
                 drawNumber(graphics, metrics, icon, String.valueOf(managedHitsplat.amount), centerX + offset.getX(), centerY + offset.getY());
             }
         }
+    }
+
+    // The damage the actor took this tick, on a large hitsplat below the game's four and your estimated hit
+    private static void drawTotal(Graphics2D graphics, ActorHitsplats actorHitsplats, int gameCycle, int centerX, int centerY){
+        OptionalInt total = actorHitsplats.visibleTotal(gameCycle);
+        if (!total.isPresent()) {
+            return;
+        }
+        BufferedImage icon = Icons.OSRS_BIG_HITSPLAT;
+        Point offset = SplatPoints.totalOffset(REFERENCE_ICON.getHeight(), icon.getHeight());
+        int x = centerX + offset.getX();
+        int y = centerY + offset.getY();
+        graphics.drawImage(icon, x - icon.getWidth()/2, y - icon.getHeight()/2, null);
+        graphics.setFont(FontManager.getRunescapeSmallFont());
+        drawNumber(graphics, graphics.getFontMetrics(), icon, String.valueOf(total.getAsInt()), x, y);
     }
 
     // The hitsplat's icon, or null if the game is drawing it, it has expired, or it has no icon

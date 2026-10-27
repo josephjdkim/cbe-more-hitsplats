@@ -1,5 +1,6 @@
 package com.extendedhitsplats.points;
 
+import com.extendedhitsplats.utils.ActorHitsplats;
 import net.runelite.api.Point;
 import org.junit.Test;
 
@@ -7,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SplatPointsTest
@@ -19,6 +21,36 @@ public class SplatPointsTest
 	private static Point right(int index, int perSide)
 	{
 		return SplatPoints.offset(5 + 2 * index, perSide);
+	}
+
+	@Test
+	public void estimatedOwnHitSitsUnderTheGamesLeftHitsplat()
+	{
+		Point ownHit = SplatPoints.offset(ActorHitsplats.ESTIMATED_OWN_HIT_SLOT, 2);
+		Point gameLeft = SplatPoints.offset(2, 2);
+		assertEquals(gameLeft.getX(), ownHit.getX());
+		assertEquals(gameLeft.getY() + 20, ownHit.getY());
+
+		for (int perSide = 1; perSide <= 8; perSide++)
+		{
+			for (int slot = 0; slot < 4 + 2 * 40; slot++)
+			{
+				assertNotEquals(ownHit, SplatPoints.offset(slot, perSide));
+			}
+		}
+	}
+
+	@Test
+	public void totalSitsBelowTheGamesFirstHitsplatAndYourEstimatedHit()
+	{
+		int hitsplatHeight = 23;
+		int totalHeight = 30;
+		Point total = SplatPoints.totalOffset(hitsplatHeight, totalHeight);
+		int totalTop = total.getY() - totalHeight / 2;
+
+		assertEquals(SplatPoints.offset(0, 2).getX(), total.getX());
+		assertTrue(totalTop >= SplatPoints.offset(0, 2).getY() + hitsplatHeight / 2);
+		assertTrue(totalTop >= SplatPoints.offset(ActorHitsplats.ESTIMATED_OWN_HIT_SLOT, 2).getY() + hitsplatHeight / 2);
 	}
 
 	@Test

@@ -3,11 +3,13 @@ package com.extendedhitsplats.utils;
 import com.google.common.collect.MapMaker;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Hitsplat;
+import net.runelite.api.HitsplatID;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
 /**
@@ -27,6 +29,9 @@ import java.util.Set;
  * Hits the game doesn't show go to an extra slot (4+) on the left or right side. Each new tick's extras go to
  * the opposite side from the previous tick's, so the two ticks a hitsplat stays on screen never share a side.
  * Extra slots interleave: 4 + 2 * index + side.
+ * <p>
+ * Also kept here: your own hit when it's estimated from XP, which has a slot of its own, and the damage the
+ * actor took in its latest tick, for the large total.
  */
 @Slf4j
 public class ActorHitsplats
@@ -34,8 +39,18 @@ public class ActorHitsplats
 	public static final int VANILLA_SLOTS = 4;
 	public static final int LEFT = 0;
 	public static final int RIGHT = 1;
+	public static final int ESTIMATED_OWN_HIT_SLOT = -1;
+	// Fewer hits than this in a tick need no total
+	private static final int MIN_HITS_FOR_TOTAL = 2;
 
 	private final List<ManagedHitsplat> hitsplats = new ArrayList<>();
+	private ManagedHitsplat estimatedOwnHit;
+	private int totalTick = -1;
+	private int totalDamage;
+	private int totalHits;
+	private int totalDisappearsOnGameCycle;
+	// From the boss HP bar, when the actor has one; 0 when not known
+	private int totalExactDamage;
 	// The game's display objects for this actor, by position. Can include a hit the game didn't show, taken for a
 	// new position; it's never seen again, so it only fills a place.
 	private final List<Hitsplat> gameObjects = new ArrayList<>();
@@ -66,7 +81,90 @@ public class ActorHitsplats
 
 		ManagedHitsplat managedHitsplat = new ManagedHitsplat(hitsplat, shownByGame, position);
 		hitsplats.add(managedHitsplat);
+		addToTotal(managedHitsplat, tick);
 		return managedHitsplat;
+	}
+
+	// Your hit, worked out from your XP because the server didn't send it
+	public void addEstimatedOwnHit(int amount, int gameCycle, int tick)
+	{
+		estimatedOwnHit = ManagedHitsplat.estimatedOwnHit(amount, gameCycle);
+		addToTotal(estimatedOwnHit, tick);
+	}
+
+	// The server sent your hit after all
+	public void removeEstimatedOwnHit()
+	{
+		estimatedOwnHit = null;
+	}
+
+	public ManagedHitsplat getEstimatedOwnHit()
+	{
+		return estimatedOwnHit;
+	}
+
+	private void addToTotal(ManagedHitsplat hit, int tick)
+	{
+		if (!isDamage(hit.hitsplatType))
+		{
+			return;
+		}
+		if (tick != totalTick)
+		{
+			totalTick = tick;
+			totalDamage = 0;
+			totalHits = 0;
+			totalDisappearsOnGameCycle = 0;
+			totalExactDamage = 0;
+		}
+		totalDamage += hit.amount;
+		totalHits++;
+		// Shown for as long as the tick's hitsplats
+		totalDisappearsOnGameCycle = Math.max(totalDisappearsOnGameCycle, hit.disappearsOnGameCycle);
+	}
+
+	// Heals and drains of things other than hitpoints don't add to the total
+	private static boolean isDamage(int hitsplatType)
+	{
+		switch (hitsplatType)
+		{
+			case HitsplatID.HEAL:
+			case HitsplatID.PRAYER_DRAIN:
+			case HitsplatID.SANITY_DRAIN:
+			case HitsplatID.SANITY_RESTORE:
+			case HitsplatID.CYAN_UP:
+			case HitsplatID.CYAN_DOWN:
+				return false;
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * The exact damage taken this tick, from HP lost, which counts the hits the server left out. Ignored for a
+	 * tick without hitsplats, as HP can drop for other reasons.
+	 */
+	public void setExactDamage(int damage, int tick)
+	{
+		if (tick == totalTick)
+		{
+			totalExactDamage = damage;
+		}
+	}
+
+	/**
+	 * The damage taken in the actor's latest tick, while that tick's hitsplats are up and if it took
+	 * {@value #MIN_HITS_FOR_TOTAL} or more hits. Uses the exact damage when it's more than the hitsplats add up
+	 * to; it can be less when the actor also healed.
+	 */
+	public OptionalInt visibleTotal(int gameCycle)
+	{
+		int damage = Math.max(totalDamage, totalExactDamage);
+		// Exact damage over the hitsplats' means some hits were left out, so there were several
+		boolean severalHits = totalHits >= MIN_HITS_FOR_TOTAL || damage > totalDamage;
+		return severalHits && totalDisappearsOnGameCycle > gameCycle
+			? OptionalInt.of(damage)
+			: OptionalInt.empty();
 	}
 
 	// Where the game shows this hit, or -1 if it doesn't
@@ -155,7 +253,11 @@ public class ActorHitsplats
 	public boolean prune(int gameCycle)
 	{
 		hitsplats.removeIf(h -> h.disappearsOnGameCycle <= gameCycle);
-		return hitsplats.isEmpty();
+		if (estimatedOwnHit != null && estimatedOwnHit.disappearsOnGameCycle <= gameCycle)
+		{
+			estimatedOwnHit = null;
+		}
+		return hitsplats.isEmpty() && estimatedOwnHit == null;
 	}
 
 	public List<ManagedHitsplat> getHitsplats()

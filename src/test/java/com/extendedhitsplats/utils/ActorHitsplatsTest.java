@@ -4,8 +4,11 @@ import net.runelite.api.Hitsplat;
 import net.runelite.api.HitsplatID;
 import org.junit.Test;
 
+import java.util.OptionalInt;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ActorHitsplatsTest
@@ -310,6 +313,100 @@ public class ActorHitsplatsTest
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
 		hitsplats.add(splat(1, 10), 0, 0);
+		assertTrue(hitsplats.prune(10));
+	}
+
+	@Test
+	public void totalIsTheLatestTicksDamage()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.add(gameObject(HitsplatID.POISON, 6, 50), 0, 0);
+		hitsplats.add(gameObject(HitsplatID.HEAL, 20, 50), 0, 0);
+		assertEquals(OptionalInt.of(9), hitsplats.visibleTotal(10));
+
+		// a new tick starts over, even while the last tick's hitsplats are up
+		hitsplats.add(splat(4, 80), 30, 1);
+		hitsplats.add(splat(6, 80), 30, 1);
+		assertEquals(OptionalInt.of(10), hitsplats.visibleTotal(40));
+		hitsplats.add(splat(7, 80), 30, 1);
+		assertEquals(OptionalInt.of(17), hitsplats.visibleTotal(40));
+
+		// and goes with the tick's hitsplats
+		assertFalse(hitsplats.visibleTotal(80).isPresent());
+	}
+
+	@Test
+	public void exactDamageCountsTheHitsTheServerLeftOut()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.setExactDamage(40, 0);
+		// only one hitsplat came, but the HP lost shows there were more
+		assertEquals(OptionalInt.of(40), hitsplats.visibleTotal(10));
+
+		// a new tick starts without it
+		hitsplats.add(splat(4, 80), 30, 1);
+		hitsplats.add(splat(6, 80), 30, 1);
+		assertEquals(OptionalInt.of(10), hitsplats.visibleTotal(40));
+	}
+
+	@Test
+	public void exactDamageUnderTheHitsplatsIsHealingAndIgnored()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.add(splat(9, 50), 0, 0);
+		hitsplats.setExactDamage(7, 0);
+		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(10));
+	}
+
+	@Test
+	public void exactDamageWithoutHitsplatsThatTickIsIgnored()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.setExactDamage(40, 1);
+		assertFalse(hitsplats.visibleTotal(10).isPresent());
+	}
+
+	@Test
+	public void singleHitNeedsNoTotal()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.add(gameObject(HitsplatID.HEAL, 20, 50), 0, 0);
+		assertFalse(hitsplats.visibleTotal(10).isPresent());
+	}
+
+	@Test
+	public void estimatedOwnHitHasItsOwnSlotAndAddsToTheTotal()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		fillVanillaSlots(hitsplats, 100);
+		hitsplats.addEstimatedOwnHit(25, 10, 0);
+
+		ManagedHitsplat ownHit = hitsplats.getEstimatedOwnHit();
+		assertEquals(ActorHitsplats.ESTIMATED_OWN_HIT_SLOT, ownHit.position);
+		assertEquals(HitsplatID.DAMAGE_ME, ownHit.hitsplatType);
+		assertFalse(ownHit.shownByGame);
+		// 0 + 1 + 2 + 3 from the game's four
+		assertEquals(OptionalInt.of(31), hitsplats.visibleTotal(10));
+
+		// extras don't take its slot
+		assertEquals(4, hitsplats.add(splat(9, 100), 10, 0).position);
+
+		hitsplats.prune(ownHit.disappearsOnGameCycle);
+		assertNull(hitsplats.getEstimatedOwnHit());
+	}
+
+	@Test
+	public void estimatedOwnHitGoesWhenTheRealOneComes()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.addEstimatedOwnHit(25, 10, 0);
+		hitsplats.removeEstimatedOwnHit();
+		assertNull(hitsplats.getEstimatedOwnHit());
 		assertTrue(hitsplats.prune(10));
 	}
 }

@@ -47,14 +47,20 @@ public class SplatPoints {
     };
     // Height of the lowest level of extras: just above the odd columns' game hitsplat
     private static final int FIRST_EXTRA_Y = -ROW_HEIGHT - ROW_HEIGHT / 2;
+    // Your estimated hit: the next cell down from the game's left hitsplat
+    private static final Point ESTIMATED_OWN_HIT_POINT = new Point(-COLUMN_WIDTH, ROW_HEIGHT / 2);
 
     /**
      * Offset of a hitsplat slot from the actor's hitsplat anchor, to the hitsplat's center.
      * Slots 0-3 match the game's layout. Extra slots (4 + 2 * index + side) go in the left or right half
      * of the honeycomb above the game's four, {@code perSide} columns wide, filling the lowest free level
      * first and the middle outward. The middle column's cells alternate between the halves, level by level.
+     * Your estimated hit has a cell of its own.
      */
     public static Point offset(int slot, int perSide) {
+        if (slot == ActorHitsplats.ESTIMATED_OWN_HIT_SLOT) {
+            return ESTIMATED_OWN_HIT_POINT;
+        }
         if (slot < VANILLA_POINTS.length) {
             return VANILLA_POINTS[slot];
         }
@@ -80,6 +86,14 @@ public class SplatPoints {
                 index--;
             }
         }
+    }
+
+    /**
+     * Offset of the large total's center from the actor's hitsplat anchor: below the game's first hitsplat
+     * and your estimated hit, which sits partly under it.
+     */
+    public static Point totalOffset(int hitsplatHeight, int totalHeight) {
+        return new Point(0, ESTIMATED_OWN_HIT_POINT.getY() + hitsplatHeight / 2 + totalHeight / 2);
     }
 
     // The middle column's cells alternate between halves, starting with the left
