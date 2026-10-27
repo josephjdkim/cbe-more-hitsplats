@@ -2,7 +2,7 @@
 
 The game shows at most four hitsplats on a character at once. CBe More Hitsplats shows the rest, can add up each tick's damage, and fills in your own hits when the server leaves them out in a crowd.
 
-![CBe More Hitsplats at a crowded NPC](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/with-plugin.png)
+![CBe More Hitsplats at the Gemstone Crab](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-2.png)
 
 ## Features
 
@@ -10,9 +10,9 @@ The game shows at most four hitsplats on a character at once. CBe More Hitsplats
 
 The game draws its own four hitsplats as usual, and the plugin draws the rest above them, continuing the game's staggered pattern. Each tick's extra hits go on the opposite side from the last tick's, so the two ticks a hitsplat stays on screen never share a side.
 
-| Without the plugin | With the plugin |
+| Columns per side: 2 (default) | Columns per side: 3 |
 |---|---|
-| ![Only four hitsplats without the plugin](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/without-plugin.png) | ![Every hitsplat with the plugin](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/with-plugin.png) |
+| ![Extra hitsplats in two columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-2.png) | ![Extra hitsplats in three columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-3.png) |
 
 ### Total damage hitsplat
 
@@ -20,13 +20,17 @@ Optional. Shows the damage a character took in a tick, when it took two or more 
 
 On a boss with the HP bar at the top of the screen, the total comes from the HP the boss lost, so it includes hits the server didn't send. Anywhere else, the total adds up the hitsplats that arrived and is marked with a star, such as `150*`, since the server may have left some out. You can turn the star off.
 
-![The total damage hitsplat below the game's four hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/large-total.png)
+| Mark unconfirmed totals: on | Mark unconfirmed totals: off |
+|---|---|
+| ![A total of 132 with a star, below the hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/total-marked.png) | ![A total of 155 without a star, below the hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/total-unmarked.png) |
 
 ### Your missing hits
 
 In a crowd, the server sends only so many hitsplats per character each tick (20 at the Gemstone Crab), and yours can be left out. When that happens, the plugin works out your hit from the combat XP you gained and shows it under the game's left hitsplat. If your real hitsplat turns up late, it replaces the estimate.
 
-![Your estimated hit under the game's left hitsplat](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/your-missing-hits.png)
+| Without your hit | With your estimated hit |
+|---|---|
+| ![A crowded tick with none of your hits](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/missing-hits-off.png) | ![A crowded tick with your estimated hit in bright red](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/missing-hits-on.png) |
 
 ## Settings
 
@@ -36,12 +40,6 @@ In a crowd, the server sends only so many hitsplats per character each tick (20 
 | Player Hitsplat | Show your missing hits | On | Shows your hit, worked out from your XP, when the server leaves it out |
 | Total Damage Hitsplat | Display total damage | Off | Shows each tick's damage on a larger hitsplat below the game's four |
 | Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to a total the boss HP bar didn't confirm, since it may be missing hits |
-
-| Columns per side: 1 | Columns per side: 4 |
-|---|---|
-| ![One column per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-1.png) | ![Four columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-4.png) |
-
-![The plugin's settings](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/settings.png)
 
 ## Limits
 
