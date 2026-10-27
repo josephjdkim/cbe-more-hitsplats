@@ -1,4 +1,4 @@
-package com.extendedhitsplats.utils;
+package com.cbemorehitsplats.utils;
 
 import org.junit.Test;
 

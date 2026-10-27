@@ -23,7 +23,7 @@ dependencies {
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
-group = 'com.extendedhitsplats'
+group = 'com.cbemorehitsplats'
 version = 'v1.0.0'
 sourceCompatibility = '1.8'
 
@@ -36,8 +36,8 @@ tasks.register('run', JavaExec) {
 	group = 'application'
 	description = 'Runs RuneLite in developer mode with this plugin loaded'
 	classpath = sourceSets.test.runtimeClasspath
-	mainClass = 'com.extendedhitsplats.ExtendedHitsplatsPluginTest'
+	mainClass = 'com.cbemorehitsplats.MoreHitsplatsPluginTest'
 	jvmArgs '-ea'
 	// Use a profile without the Plugin Hub copy installed, or both copies run. Override with -PruneliteProfile=...
-	args '--developer-mode', "--profile=${findProperty('runeliteProfile') ?: 'Extended Hitsplats Dev'}"
+	args '--developer-mode', "--profile=${findProperty('runeliteProfile') ?: 'More Hitsplats Dev'}"
 }

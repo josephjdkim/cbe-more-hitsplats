@@ -1,4 +1,4 @@
-package com.extendedhitsplats.overlays;
+package com.cbemorehitsplats.overlays;
 /*
  * Copyright (c) 2018, Morgan Lewis <https://github.com/MESLewis>
  * Copyright (c) 2022, Ferrariic <ferrariictweet@gmail.com>
@@ -25,12 +25,12 @@ package com.extendedhitsplats.overlays;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.extendedhitsplats.ExtendedHitsplatsConfig;
-import com.extendedhitsplats.points.SplatPoints;
-import com.extendedhitsplats.utils.ActorHitsplats;
-import com.extendedhitsplats.utils.HitsplatManager;
-import com.extendedhitsplats.utils.Icons;
-import com.extendedhitsplats.utils.ManagedHitsplat;
+import com.cbemorehitsplats.MoreHitsplatsConfig;
+import com.cbemorehitsplats.points.SplatPoints;
+import com.cbemorehitsplats.utils.ActorHitsplats;
+import com.cbemorehitsplats.utils.HitsplatManager;
+import com.cbemorehitsplats.utils.Icons;
+import com.cbemorehitsplats.utils.ManagedHitsplat;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.HitsplatID;
@@ -51,17 +51,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 
-public class ExtendedHitsplatsOverlay extends Overlay
+public class MoreHitsplatsOverlay extends Overlay
 {
     // Used to find each actor's hitsplat anchor
     private static final BufferedImage REFERENCE_ICON = Icons.OSRS_SELF_DAMAGE_HITSPLAT;
 
-    private final ExtendedHitsplatsConfig config;
+    private final MoreHitsplatsConfig config;
     private final Client client;
     private final HitsplatManager hitsplatManager;
 
     @Inject
-    private ExtendedHitsplatsOverlay(ExtendedHitsplatsConfig config, Client client, HitsplatManager hitsplatManager)
+    private MoreHitsplatsOverlay(MoreHitsplatsConfig config, Client client, HitsplatManager hitsplatManager)
     {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.UNDER_WIDGETS);

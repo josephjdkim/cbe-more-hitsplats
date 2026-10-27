@@ -24,11 +24,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.extendedhitsplats;
+package com.cbemorehitsplats;
 
-import com.extendedhitsplats.overlays.ExtendedHitsplatsOverlay;
-import com.extendedhitsplats.utils.HitsplatManager;
-import com.extendedhitsplats.utils.OwnHitEstimator;
+import com.cbemorehitsplats.overlays.MoreHitsplatsOverlay;
+import com.cbemorehitsplats.utils.HitsplatManager;
+import com.cbemorehitsplats.utils.OwnHitEstimator;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
@@ -57,9 +57,9 @@ import javax.inject.Inject;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Extended Hitsplats",description = "This plugin will allow you to see more than four hitsplats on a character",enabledByDefault = true, tags = {"extended", "hitsplat"}
+	name = "CBe More Hitsplats",description = "Shows every hitsplat, a per-tick total, and your own hits in crowds",enabledByDefault = true, tags = {"hitsplat", "damage", "total", "extended", "more"}
 )
-public class ExtendedHitsplatsPlugin extends Plugin
+public class MoreHitsplatsPlugin extends Plugin
 {
 	@Inject
 	private Client client;
@@ -68,11 +68,11 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	@Inject
 	private OverlayManager overlayManager;
 	@Inject
-	private ExtendedHitsplatsOverlay overlay;
+	private MoreHitsplatsOverlay overlay;
 	@Inject
 	private HitsplatManager hitsplatManager;
 	@Inject
-	private ExtendedHitsplatsConfig config;
+	private MoreHitsplatsConfig config;
 	@Inject
 	private NPCManager npcManager;
 
@@ -221,8 +221,8 @@ public class ExtendedHitsplatsPlugin extends Plugin
 	}
 
 	@Provides
-	ExtendedHitsplatsConfig provideConfig(ConfigManager configManager)
+	MoreHitsplatsConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(ExtendedHitsplatsConfig.class);
+		return configManager.getConfig(MoreHitsplatsConfig.class);
 	}
 }

@@ -1,13 +1,13 @@
-package com.extendedhitsplats;
+package com.cbemorehitsplats;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class ExtendedHitsplatsPluginTest
+public class MoreHitsplatsPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(ExtendedHitsplatsPlugin.class);
+		ExternalPluginManager.loadBuiltin(MoreHitsplatsPlugin.class);
 		RuneLite.main(args);
 	}
 }

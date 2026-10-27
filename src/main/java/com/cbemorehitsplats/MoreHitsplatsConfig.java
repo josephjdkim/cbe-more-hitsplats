@@ -1,9 +1,9 @@
-package com.extendedhitsplats;
+package com.cbemorehitsplats;
 
 import net.runelite.client.config.*;
 
-@ConfigGroup("extendedhitsplats")
-public interface ExtendedHitsplatsConfig extends Config
+@ConfigGroup("cbemorehitsplats")
+public interface MoreHitsplatsConfig extends Config
 {
 	@ConfigItem(
 			position = 0,

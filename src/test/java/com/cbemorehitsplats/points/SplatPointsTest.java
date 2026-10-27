@@ -1,6 +1,6 @@
-package com.extendedhitsplats.points;
+package com.cbemorehitsplats.points;
 
-import com.extendedhitsplats.utils.ActorHitsplats;
+import com.cbemorehitsplats.utils.ActorHitsplats;
 import net.runelite.api.Point;
 import org.junit.Test;
 

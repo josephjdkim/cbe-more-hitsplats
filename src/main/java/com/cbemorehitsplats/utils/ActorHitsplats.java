@@ -1,4 +1,4 @@
-package com.extendedhitsplats.utils;
+package com.cbemorehitsplats.utils;
 
 import com.google.common.collect.MapMaker;
 import lombok.extern.slf4j.Slf4j;

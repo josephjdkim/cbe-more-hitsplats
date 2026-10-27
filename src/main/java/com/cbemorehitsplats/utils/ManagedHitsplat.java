@@ -1,4 +1,4 @@
-package com.extendedhitsplats.utils;
+package com.cbemorehitsplats.utils;
 
 import net.runelite.api.Hitsplat;
 import net.runelite.api.HitsplatID;
