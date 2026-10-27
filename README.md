@@ -14,13 +14,13 @@ The game draws its own four hitsplats as usual, and the plugin draws the rest ab
 |---|---|
 | ![Only four hitsplats without the plugin](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/without-plugin.png) | ![Every hitsplat with the plugin](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/with-plugin.png) |
 
-### Large total
+### Total damage hitsplat
 
 Optional. Shows the damage a character took in a tick, when it took two or more hits, on a larger hitsplat below the game's four. Heals and prayer drains don't count.
 
 On a boss with the HP bar at the top of the screen, the total comes from the HP the boss lost, so it includes hits the server didn't send. Anywhere else, the total adds up the hitsplats that arrived and is marked with a star, such as `150*`, since the server may have left some out. You can turn the star off.
 
-![The large total below the game's four hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/large-total.png)
+![The total damage hitsplat below the game's four hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/large-total.png)
 
 ### Your missing hits
 
@@ -30,14 +30,14 @@ In a crowd, the server sends only so many hitsplats per character each tick (20 
 
 ## Settings
 
-| Setting | Default | What it does |
-|---|---|---|
-| Columns Per Side | 2 | How many columns of extra hitsplats each side has, from 1 to 8 |
-| Show Your Missing Hits | On | Shows your hit, worked out from your XP, when the server leaves it out |
-| Large Total: Show Large Total | Off | Shows each tick's damage on a larger hitsplat below the game's four |
-| Large Total: Mark Uncertain Totals | On | Adds a star to a total that only adds up the hitsplats that arrived, since it may be missing some |
+| Section | Setting | Default | What it does |
+|---|---|---|---|
+| Display | Columns per side | 2 | How many columns of extra hitsplats each side has, from 1 to 8 |
+| Player Hitsplat | Show your missing hits | On | Shows your hit, worked out from your XP, when the server leaves it out |
+| Total Damage Hitsplat | Display total damage | Off | Shows each tick's damage on a larger hitsplat below the game's four |
+| Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to a total the boss HP bar didn't confirm, since it may be missing hits |
 
-| Columns Per Side: 1 | Columns Per Side: 4 |
+| Columns per side: 1 | Columns per side: 4 |
 |---|---|
 | ![One column per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-1.png) | ![Four columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-4.png) |
 
@@ -46,7 +46,7 @@ In a crowd, the server sends only so many hitsplats per character each tick (20 
 ## Limits
 
 - **Hits the server doesn't send can't be shown.** Apart from your own estimated hit, the plugin can only draw the hitsplats your client receives.
-- **The large total counts only the hits that arrived**, except on a boss with the HP bar. That includes the Gemstone Crab, whose bar counts down to when it burrows rather than showing damage. Bosses whose HP depends on group size, such as raid bosses, also fall back to adding up the hits. The HP bar has to be turned on in the game's settings.
+- **The total damage hitsplat counts only the hits that arrived**, except on a boss with the HP bar. That includes the Gemstone Crab, whose bar counts down to when it burrows rather than showing damage. Bosses whose HP depends on group size, such as raid bosses, also fall back to adding up the hits. The HP bar has to be turned on in the game's settings.
 - **Your missing hits are estimates:**
   - Misses give no XP, so they can't be shown.
   - Several hits in one tick, from multi-hit weapons or area attacks, show as one combined number on the character you're attacking.
