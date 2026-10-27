@@ -30,7 +30,6 @@ import com.cbemorehitsplats.overlays.MoreHitsplatsOverlay;
 import com.cbemorehitsplats.utils.HitsplatManager;
 import com.cbemorehitsplats.utils.OwnHitEstimator;
 import com.google.inject.Provides;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -55,7 +54,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import javax.inject.Inject;
 
-@Slf4j
 @PluginDescriptor(
 	name = "CBe More Hitsplats",description = "Shows every hitsplat, a per-tick total, and your own hits in crowds",enabledByDefault = true, tags = {"hitsplat", "damage", "total", "extended", "more"}
 )
@@ -133,6 +131,7 @@ public class MoreHitsplatsPlugin extends Plugin
 			hitsplatManager.addEstimatedOwnHit(estimate.target, estimate.damage, gameCycle, tick);
 		}
 		checkHpBar(tick);
+		hitsplatManager.checkServerLimit(tick);
 	}
 
 	// The boss HP bar at the top of the screen shows exact HP. What a boss lost this tick is all the damage it

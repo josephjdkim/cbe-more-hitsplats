@@ -67,7 +67,7 @@ public interface MoreHitsplatsConfig extends Config
 			position = 1,
 			keyName = "markUncertainTotals",
 			name = "Mark unconfirmed totals",
-			description = "Adds * to a total the boss HP bar didn't confirm. It only adds up the hits the server sent, so it may be missing some. Only applies when Display total damage is on.",
+			description = "Adds * to a total that may be missing hits. The server sends at most 20 hitsplats per character each tick, so a total is marked when its tick reaches 20 or includes your estimated hit, unless the boss HP bar confirms it. Only applies when Display total damage is on.",
 			section = totalDamageSection
 	)
 	default boolean markUncertainTotals()

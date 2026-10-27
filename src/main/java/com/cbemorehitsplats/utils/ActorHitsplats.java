@@ -40,6 +40,9 @@ public class ActorHitsplats
 	public static final int LEFT = 0;
 	public static final int RIGHT = 1;
 	public static final int ESTIMATED_OWN_HIT_SLOT = -1;
+	// The most hitsplats the server sends for one actor in one tick; past it, it leaves hits out. Seen at the
+	// Gemstone Crab, and the top of the hitsplat limit the game's protocol has carried since revision 237.
+	public static final int SERVER_HITSPLAT_LIMIT = 20;
 	// Fewer hits than this in a tick need no total
 	private static final int MIN_HITS_FOR_TOTAL = 2;
 
@@ -48,6 +51,9 @@ public class ActorHitsplats
 	private int totalTick = -1;
 	private int totalDamage;
 	private int totalHits;
+	// Every hitsplat the server sent in the total's tick, of any type
+	private int tickHitsplats;
+	private boolean totalIncludesEstimate;
 	private int totalDisappearsOnGameCycle;
 	// From the boss HP bar, when the actor has one
 	private boolean totalExactDamageKnown;
@@ -82,7 +88,9 @@ public class ActorHitsplats
 
 		ManagedHitsplat managedHitsplat = new ManagedHitsplat(hitsplat, shownByGame, position);
 		hitsplats.add(managedHitsplat);
-		addToTotal(managedHitsplat, tick);
+		startTick(tick);
+		tickHitsplats++;
+		addToTotal(managedHitsplat);
 		return managedHitsplat;
 	}
 
@@ -90,7 +98,9 @@ public class ActorHitsplats
 	public void addEstimatedOwnHit(int amount, int gameCycle, int tick)
 	{
 		estimatedOwnHit = ManagedHitsplat.estimatedOwnHit(amount, gameCycle);
-		addToTotal(estimatedOwnHit, tick);
+		startTick(tick);
+		totalIncludesEstimate = true;
+		addToTotal(estimatedOwnHit);
 	}
 
 	// The server sent your hit after all
@@ -104,20 +114,27 @@ public class ActorHitsplats
 		return estimatedOwnHit;
 	}
 
-	private void addToTotal(ManagedHitsplat hit, int tick)
+	// The total and the hitsplat count are for the latest tick that brought hits, of any type
+	private void startTick(int tick)
 	{
-		if (!isDamage(hit.hitsplatType))
-		{
-			return;
-		}
 		if (tick != totalTick)
 		{
 			totalTick = tick;
 			totalDamage = 0;
 			totalHits = 0;
+			tickHitsplats = 0;
+			totalIncludesEstimate = false;
 			totalDisappearsOnGameCycle = 0;
 			totalExactDamageKnown = false;
 			totalExactDamage = 0;
+		}
+	}
+
+	private void addToTotal(ManagedHitsplat hit)
+	{
+		if (!isDamage(hit.hitsplatType))
+		{
+			return;
 		}
 		totalDamage += hit.amount;
 		totalHits++;
@@ -157,12 +174,36 @@ public class ActorHitsplats
 	}
 
 	/**
-	 * True if the latest tick's total is the HP the actor lost, so it can't be missing hits. Otherwise it adds
-	 * up the hitsplats, and the server may have left some out.
+	 * True if the latest tick's total can't be missing hits: the HP bar showed the HP the actor lost, or the
+	 * server sent fewer than {@value #SERVER_HITSPLAT_LIMIT} hitsplats, so it left none out. A total with your
+	 * estimated hit is only confirmed by the HP bar, as the estimate is worked out from XP.
 	 */
-	public boolean isTotalExact()
+	public boolean isTotalConfirmed()
 	{
-		return totalExactDamageKnown && totalExactDamage >= totalDamage;
+		if (totalExactDamageKnown && totalExactDamage >= totalDamage)
+		{
+			return true;
+		}
+		return tickHitsplats < SERVER_HITSPLAT_LIMIT && !totalIncludesEstimate;
+	}
+
+	// Hitsplats of any type the server sent this actor in the tick
+	public int hitsplatsOnTick(int tick)
+	{
+		return tick == totalTick ? tickHitsplats : 0;
+	}
+
+	/**
+	 * The HP the HP bar showed lost in the tick beyond what the hitsplats add up to, when the server sent fewer
+	 * than {@value #SERVER_HITSPLAT_LIMIT} hitsplats. Under the limit no hits should be missing, so it should be 0.
+	 */
+	public int missingDamageUnderLimit(int tick)
+	{
+		if (tick != totalTick || !totalExactDamageKnown || tickHitsplats >= SERVER_HITSPLAT_LIMIT)
+		{
+			return 0;
+		}
+		return Math.max(totalExactDamage - totalDamage, 0);
 	}
 
 	/**

@@ -46,6 +46,15 @@ public class ActorHitsplatsTest
 		}
 	}
 
+	// A tick in which the server sends as many hitsplats as it will
+	private static void fillServerLimit(ActorHitsplats hitsplats, int amount, int gameCycle, int tick)
+	{
+		for (int i = 0; i < ActorHitsplats.SERVER_HITSPLAT_LIMIT; i++)
+		{
+			hitsplats.add(splat(amount, gameCycle + 50), gameCycle, tick);
+		}
+	}
+
 	// Like the game's hitsplat objects, which it reuses for later hits
 	private static class RecycledHitsplat implements Hitsplat
 	{
@@ -344,55 +353,52 @@ public class ActorHitsplatsTest
 		hitsplats.setExactDamage(40, 0);
 		// only one hitsplat came, but the HP lost shows there were more
 		assertEquals(OptionalInt.of(40), hitsplats.visibleTotal(10));
-		assertTrue(hitsplats.isTotalExact());
+		assertTrue(hitsplats.isTotalConfirmed());
 
 		// a new tick starts without it
 		hitsplats.add(splat(4, 80), 30, 1);
 		hitsplats.add(splat(6, 80), 30, 1);
 		assertEquals(OptionalInt.of(10), hitsplats.visibleTotal(40));
-		assertFalse(hitsplats.isTotalExact());
 	}
 
 	@Test
 	public void exactDamageMatchingTheHitsplatsConfirmsThem()
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
-		hitsplats.add(splat(3, 50), 0, 0);
-		hitsplats.add(splat(9, 50), 0, 0);
-		assertFalse(hitsplats.isTotalExact());
+		fillServerLimit(hitsplats, 1, 0, 0);
+		assertFalse(hitsplats.isTotalConfirmed());
 
-		hitsplats.setExactDamage(12, 0);
-		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(10));
-		assertTrue(hitsplats.isTotalExact());
+		hitsplats.setExactDamage(20, 0);
+		assertEquals(OptionalInt.of(20), hitsplats.visibleTotal(10));
+		assertTrue(hitsplats.isTotalConfirmed());
 	}
 
 	@Test
 	public void noHpLostStillConfirmsMisses()
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
-		hitsplats.add(splat(0, 50), 0, 0);
-		hitsplats.add(splat(0, 50), 0, 0);
+		fillServerLimit(hitsplats, 0, 0, 0);
 		hitsplats.setExactDamage(0, 0);
 		assertEquals(OptionalInt.of(0), hitsplats.visibleTotal(10));
-		assertTrue(hitsplats.isTotalExact());
+		assertTrue(hitsplats.isTotalConfirmed());
 	}
 
 	@Test
 	public void exactDamageUnderTheHitsplatsIsHealingAndIgnored()
 	{
 		ActorHitsplats hitsplats = new ActorHitsplats();
-		hitsplats.add(splat(3, 50), 0, 0);
-		hitsplats.add(splat(9, 50), 0, 0);
+		fillServerLimit(hitsplats, 1, 0, 0);
 		hitsplats.setExactDamage(7, 0);
-		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(10));
-		// healing hides how much was dealt, so the total is the hitsplats' again
-		assertFalse(hitsplats.isTotalExact());
+		assertEquals(OptionalInt.of(20), hitsplats.visibleTotal(10));
+		// healing hides how much was dealt, so the total is the hitsplats' again, which may be missing hits
+		assertFalse(hitsplats.isTotalConfirmed());
 
 		hitsplats.add(splat(3, 80), 30, 1);
 		hitsplats.add(splat(9, 80), 30, 1);
 		hitsplats.setExactDamage(-5, 1);
 		assertEquals(OptionalInt.of(12), hitsplats.visibleTotal(40));
-		assertFalse(hitsplats.isTotalExact());
+		// under the limit the hitsplats are every hit, healing or not
+		assertTrue(hitsplats.isTotalConfirmed());
 	}
 
 	@Test
@@ -402,7 +408,82 @@ public class ActorHitsplatsTest
 		hitsplats.add(splat(3, 50), 0, 0);
 		hitsplats.setExactDamage(40, 1);
 		assertFalse(hitsplats.visibleTotal(10).isPresent());
-		assertFalse(hitsplats.isTotalExact());
+		assertEquals(0, hitsplats.missingDamageUnderLimit(0));
+	}
+
+	@Test
+	public void totalUnderTheServerLimitIsConfirmed()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		for (int i = 0; i < ActorHitsplats.SERVER_HITSPLAT_LIMIT - 1; i++)
+		{
+			hitsplats.add(splat(2, 50), 0, 0);
+		}
+		assertEquals(OptionalInt.of(38), hitsplats.visibleTotal(10));
+		assertTrue(hitsplats.isTotalConfirmed());
+
+		// once the tick reaches the limit, the server may have left hits out
+		hitsplats.add(splat(2, 50), 0, 0);
+		assertFalse(hitsplats.isTotalConfirmed());
+	}
+
+	@Test
+	public void everyHitsplatTypeCountsTowardTheLimit()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		for (int i = 0; i < ActorHitsplats.SERVER_HITSPLAT_LIMIT - 2; i++)
+		{
+			hitsplats.add(splat(0, 50), 0, 0);
+		}
+		hitsplats.add(gameObject(HitsplatID.HEAL, 20, 50), 0, 0);
+		hitsplats.add(gameObject(HitsplatID.PRAYER_DRAIN, 5, 50), 0, 0);
+		assertEquals(ActorHitsplats.SERVER_HITSPLAT_LIMIT, hitsplats.hitsplatsOnTick(0));
+		assertFalse(hitsplats.isTotalConfirmed());
+		// only that tick's hitsplats count
+		assertEquals(0, hitsplats.hitsplatsOnTick(1));
+	}
+
+	@Test
+	public void estimatedOwnHitLeavesTheTotalUnconfirmed()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.addEstimatedOwnHit(25, 10, 0);
+		// the server didn't send it, so it doesn't count toward the limit; it's worked out from XP, so it's a guess
+		assertEquals(1, hitsplats.hitsplatsOnTick(0));
+		assertEquals(OptionalInt.of(28), hitsplats.visibleTotal(10));
+		assertFalse(hitsplats.isTotalConfirmed());
+
+		hitsplats.setExactDamage(28, 0);
+		assertTrue(hitsplats.isTotalConfirmed());
+	}
+
+	@Test
+	public void missingDamageIsOnlyCountedUnderTheLimit()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 50), 0, 0);
+		hitsplats.add(splat(9, 50), 0, 0);
+		hitsplats.setExactDamage(15, 0);
+		// the HP bar shows 3 HP the hitsplats don't, in a tick under the limit where none should be missing
+		assertEquals(3, hitsplats.missingDamageUnderLimit(0));
+		assertEquals(0, hitsplats.missingDamageUnderLimit(1));
+
+		// at the limit, the server leaving hits out is expected
+		fillServerLimit(hitsplats, 1, 30, 1);
+		hitsplats.setExactDamage(30, 1);
+		assertEquals(0, hitsplats.missingDamageUnderLimit(1));
+	}
+
+	@Test
+	public void aTickOfOnlyHealsEndsTheTotal()
+	{
+		ActorHitsplats hitsplats = new ActorHitsplats();
+		hitsplats.add(splat(3, 80), 0, 0);
+		hitsplats.add(splat(9, 80), 0, 0);
+		hitsplats.add(gameObject(HitsplatID.HEAL, 20, 80), 30, 1);
+		// the total is the latest tick's, which brought no damage
+		assertFalse(hitsplats.visibleTotal(40).isPresent());
 	}
 
 	@Test

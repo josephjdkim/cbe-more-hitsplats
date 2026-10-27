@@ -20,7 +20,7 @@ When a character takes two or more hits in a tick, a larger hitsplat below the g
 
 Total damage accuracy:
 - On a boss with the HP bar at the top of the screen, the total damage value uses the HP the boss lost; this is more accurate because it can include damage from hits that may not be sent over from the server.
-- Everywhere else, the total adds up the hitsplats that arrived and ends in a star (e.g. `150*`), because the server may have left some out. You can turn the star off.
+- Everywhere else, the total adds up the hitsplats that arrived. The server sends at most 20 hitsplats per character each tick, so a tick with fewer brought every hit. When a tick reaches 20, or the total includes your estimated hit, the total ends in a star (e.g. `150*`). You can turn the star off.
 
 | Star on | Star off |
 |---|---|
@@ -28,7 +28,7 @@ Total damage accuracy:
 
 ### Your missing hits
 
-In a crowd, the server sends only so many hitsplats per character each tick, 20 at the Gemstone Crab, and it can leave yours out. When it does, the plugin works out your hit from the combat XP you gained and draws it under the game's left hitsplat. If your real hitsplat arrives late, it replaces the estimate.
+In a crowd, the server sends at most 20 hitsplats per character each tick, and it can leave yours out. When it does, the plugin works out your hit from the combat XP you gained and draws it under the game's left hitsplat. If your real hitsplat arrives late, it replaces the estimate.
 
 | Without your hit | With your estimated hit |
 |---|---|
@@ -41,11 +41,12 @@ In a crowd, the server sends only so many hitsplats per character each tick, 20 
 | Display | Columns per side | 2 | Sets how many columns of extra hitsplats each side has, from 1 to 8 |
 | Player Hitsplat | Show your missing hits | On | Shows your hit, worked out from your XP, when the server leaves it out |
 | Total Damage Hitsplat | Display total damage | Off | Shows each tick's total damage below the game's four hitsplats |
-| Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to totals the boss HP bar didn't confirm |
+| Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to totals that may be missing hits |
 
 ## Limits
 
 - The plugin can only draw the hitsplats your client receives. Apart from your own hit, it can't recover hits the server leaves out.
+- Jagex doesn't document the limit of 20 hitsplats per tick. It's what the plugin saw at the Gemstone Crab, and the most hitsplats the game's protocol lets a character show at once.
 - The total includes left-out hits only on a boss with the HP bar, and only for the boss you're attacking. The HP bar must be on in the game's settings. Bosses whose HP depends on group size, such as raid bosses, fall back to adding up hitsplats. So does the Gemstone Crab, whose bar counts down to when it burrows instead of tracking damage.
 - Your missing hits are estimates from XP:
   - Misses give no XP, so the plugin can't show them.
@@ -63,4 +64,4 @@ It's released under the BSD 2-Clause License. See [LICENSE](LICENSE).
 ## Development
 
 - `./gradlew build` builds the plugin and runs the tests.
-- `./gradlew run` starts RuneLite in developer mode with the plugin loaded. It uses a separate RuneLite profile named "More Hitsplats Dev". Pass `-PruneliteProfile=<name>` to use a different one.
+- `./gradlew run` starts RuneLite in developer mode with the plugin loaded. It uses a separate RuneLite profile named "More Hitsplats Dev". Pass `-PruneliteProfile=<name>` to use a different one. It also turns on debug logging, so `client.log` notes any tick that brings more than 20 hitsplats, or that a boss HP bar shows was missing hits with fewer.

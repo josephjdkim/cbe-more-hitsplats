@@ -133,7 +133,7 @@ public class MoreHitsplatsOverlay extends Overlay
             return;
         }
         String text = String.valueOf(total.getAsInt());
-        if (config.markUncertainTotals() && !actorHitsplats.isTotalExact()) {
+        if (config.markUncertainTotals() && !actorHitsplats.isTotalConfirmed()) {
             text += "*";
         }
         BufferedImage icon = Icons.OSRS_BIG_HITSPLAT;
