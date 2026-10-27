@@ -1,32 +1,34 @@
 # CBe More Hitsplats
 
-The game shows at most four hitsplats on a character at once. CBe More Hitsplats shows the rest, can add up each tick's damage, and fills in your own hits when the server leaves them out in a crowd.
-
-![CBe More Hitsplats at the Gemstone Crab](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-2.png)
+OSRS renders four hitsplats at most on a character at once. `CBe More Hitsplats` draws additional hitsplats based on game data. The plugin can also show (1) each tick's total damage and (2) your own hitsplat when the server leaves it out.
 
 ## Features
 
 ### Every hitsplat
 
-The game draws its own four hitsplats as usual, and the plugin draws the rest above them, continuing the game's staggered pattern. Each tick's extra hits go on the opposite side from the last tick's, so the two ticks a hitsplat stays on screen never share a side.
+The game still draws its own four hitsplats. The plugin draws the extra ones above them, and your estimated hit and the total below. Each tick's extras go on the opposite side from the previous tick's, so hitsplats from consecutive ticks don't mix.
 
-| Columns per side: 2 (default) | Columns per side: 3 |
+| 2 columns per side, the default | 3 columns per side |
 |---|---|
 | ![Extra hitsplats in two columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-2.png) | ![Extra hitsplats in three columns per side](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/columns-3.png) |
 
 ### Total damage hitsplat
 
-Optional. Shows the damage a character took in a tick, when it took two or more hits, on a larger hitsplat below the game's four. Heals and prayer drains don't count.
+_Off by default_.
 
-On a boss with the HP bar at the top of the screen, the total comes from the HP the boss lost, so it includes hits the server didn't send. Anywhere else, the total adds up the hitsplats that arrived and is marked with a star, such as `150*`, since the server may have left some out. You can turn the star off.
+When a character takes two or more hits in a tick, a larger hitsplat below the game's four shows the total. Heals and prayer drains don't count toward it.
 
-| Mark unconfirmed totals: on | Mark unconfirmed totals: off |
+Total damage accuracy:
+- On a boss with the HP bar at the top of the screen, the total damage value uses the HP the boss lost; this is more accurate because it can include damage from hits that may not be sent over from the server.
+- Everywhere else, the total adds up the hitsplats that arrived and ends in a star (e.g. `150*`), because the server may have left some out. You can turn the star off.
+
+| Star on | Star off |
 |---|---|
 | ![A total of 132 with a star, below the hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/total-marked.png) | ![A total of 155 without a star, below the hitsplats](https://github.com/josephjdkim/cbe-more-hitsplats/raw/HEAD/docs/total-unmarked.png) |
 
 ### Your missing hits
 
-In a crowd, the server sends only so many hitsplats per character each tick (20 at the Gemstone Crab), and yours can be left out. When that happens, the plugin works out your hit from the combat XP you gained and shows it under the game's left hitsplat. If your real hitsplat turns up late, it replaces the estimate.
+In a crowd, the server sends only so many hitsplats per character each tick, 20 at the Gemstone Crab, and it can leave yours out. When it does, the plugin works out your hit from the combat XP you gained and draws it under the game's left hitsplat. If your real hitsplat arrives late, it replaces the estimate.
 
 | Without your hit | With your estimated hit |
 |---|---|
@@ -36,29 +38,29 @@ In a crowd, the server sends only so many hitsplats per character each tick (20 
 
 | Section | Setting | Default | What it does |
 |---|---|---|---|
-| Display | Columns per side | 2 | How many columns of extra hitsplats each side has, from 1 to 8 |
+| Display | Columns per side | 2 | Sets how many columns of extra hitsplats each side has, from 1 to 8 |
 | Player Hitsplat | Show your missing hits | On | Shows your hit, worked out from your XP, when the server leaves it out |
-| Total Damage Hitsplat | Display total damage | Off | Shows each tick's damage on a larger hitsplat below the game's four |
-| Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to a total the boss HP bar didn't confirm, since it may be missing hits |
+| Total Damage Hitsplat | Display total damage | Off | Shows each tick's total damage below the game's four hitsplats |
+| Total Damage Hitsplat | Mark unconfirmed totals | On | Adds a star to totals the boss HP bar didn't confirm |
 
 ## Limits
 
-- **Hits the server doesn't send can't be shown.** Apart from your own estimated hit, the plugin can only draw the hitsplats your client receives.
-- **The total damage hitsplat counts only the hits that arrived**, except on a boss with the HP bar. That includes the Gemstone Crab, whose bar counts down to when it burrows rather than showing damage. Bosses whose HP depends on group size, such as raid bosses, also fall back to adding up the hits. The HP bar has to be turned on in the game's settings.
-- **Your missing hits are estimates:**
-  - Misses give no XP, so they can't be shown.
-  - Several hits in one tick, from multi-hit weapons or area attacks, show as one combined number on the character you're attacking.
-  - Characters that give more or less XP than usual throw the estimate off by that much. The Gemstone Crab's 12.5% XP penalty is accounted for.
+- The plugin can only draw the hitsplats your client receives. Apart from your own hit, it can't recover hits the server leaves out.
+- The total includes left-out hits only on a boss with the HP bar, and only for the boss you're attacking. The HP bar must be on in the game's settings. Bosses whose HP depends on group size, such as raid bosses, fall back to adding up hitsplats. So does the Gemstone Crab, whose bar counts down to when it burrows instead of tracking damage.
+- Your missing hits are estimates from XP:
+  - Misses give no XP, so the plugin can't show them.
+  - Several hits in one tick, from multi-hit weapons or area attacks, show as one combined hit on the character you're attacking.
+  - Characters with an XP bonus or penalty throw the estimate off by that amount. The plugin accounts for the Gemstone Crab's 12.5% penalty.
   - Magic hits can be off by 1.
-- **Don't use it alongside Extended Hitsplats.** Both would draw hitsplats.
+- Don't run this plugin alongside Extended Hitsplats. Both draw hitsplats on the same characters, and they overlap.
 
 ## Credits
 
-Based on [Extended Hitsplats](https://github.com/Extended-Hitsplats/extended-hitsplats) by Ferrariic, with fixes by Rose ([YeahImRose](https://github.com/YeahImRose)). The hitsplat images come from the original plugin.
+CBe More Hitsplats is based on [Extended Hitsplats](https://github.com/Extended-Hitsplats/extended-hitsplats) by Ferrariic, with fixes by [Rose](https://github.com/YeahImRose). The hitsplat images come from the original plugin.
 
-Licensed under the BSD 2-Clause License. See [LICENSE](LICENSE).
+It's released under the BSD 2-Clause License. See [LICENSE](LICENSE).
 
 ## Development
 
-- Build and run the tests: `./gradlew build`
-- Run RuneLite in developer mode with the plugin loaded: `./gradlew run`. It uses a separate RuneLite profile, "More Hitsplats Dev"; pass `-PruneliteProfile=...` to use another.
+- `./gradlew build` builds the plugin and runs the tests.
+- `./gradlew run` starts RuneLite in developer mode with the plugin loaded. It uses a separate RuneLite profile named "More Hitsplats Dev". Pass `-PruneliteProfile=<name>` to use a different one.
